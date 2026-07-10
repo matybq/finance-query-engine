@@ -85,7 +85,7 @@ def router_node(state: AgentState) -> dict:
             [
                 (
                     "system",
-                    "Route the user question for a corpus-grounded finance assistant. "
+                    "Set the `route` field for a corpus-grounded finance assistant. "
                     "Use direct ONLY for meta/help/greetings about the assistant itself, such as 'hello' or "
                     "'what can you do?'. NEVER use direct for factual questions. "
                     "Use retrieve for factual questions about Airbnb or the indexed Airbnb 10-K FY2025 corpus. "
@@ -158,9 +158,9 @@ def grade_node(state: AgentState) -> dict:
             [
                 (
                     "system",
-                    "Decide whether the retrieved chunks contain enough information to answer the original question. "
-                    "Judge against the original question, not the retrieval query. Return sufficient=true only when "
-                    "the chunks include the specific facts needed for a grounded answer.",
+                    "Set the `sufficient` field to indicate whether the retrieved chunks contain enough information "
+                    "to answer the original question. Judge against the original question, not the retrieval query. "
+                    "Use sufficient=true only when the chunks include the specific facts needed for a grounded answer.",
                 ),
                 (
                     "human",
@@ -189,10 +189,10 @@ def rewrite_node(state: AgentState) -> dict:
             [
                 (
                     "system",
-                    "Rewrite the search query as a concise keyword-style search query: a short noun phrase, "
+                    "Set the `query` field to a concise keyword-style search query: a short noun phrase, "
                     "not a question. Do not use interrogative words or full sentences. Use formal terminology "
                     "as found in SEC 10-K filings instead of colloquial wording. Produce a query that differs "
-                    "meaningfully from all previous search attempts. Return only the query text.",
+                    "meaningfully from all previous search attempts.",
                 ),
                 (
                     "human",
