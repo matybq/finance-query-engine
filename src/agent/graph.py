@@ -21,6 +21,7 @@ MAX_REWRITES = 2
 RETRIEVE_K = 6
 
 
+Route = Literal["retrieve", "direct", "out_of_scope"]
 Source = tuple[str, str]
 StructuredOutput = TypeVar("StructuredOutput", bound=BaseModel)
 
@@ -36,16 +37,14 @@ class AgentState(TypedDict):
     answer: str  # the generated answer
     sources: list[Source]  # the sources of the retrieved documents
     rewrite_count: int  # the number of times the question has been rewritten
-    route: str  # the next route for the user's question
+    route: Route  # the next route for the user's question
     sufficient: NotRequired[bool]  # whether the retrieved documents contain enough information to answer the original question
     rewritten_queries: NotRequired[list[str]]  # the rewritten queries used to retrieve documents
     retrieval_attempts: NotRequired[list[tuple[str, list[str]]]]  # the retrieval attempts and their results
 
 
 class RouteDecision(BaseModel):
-    route: Literal["retrieve", "direct", "out_of_scope"] = Field(
-        description="The next route for the user's question."
-    )
+    route: Route = Field(description="The next route for the user's question.")
 
 
 class GradeDecision(BaseModel):
@@ -62,7 +61,7 @@ class RewriteDecision(BaseModel):
 class AgentResult:
     answer: str
     sources: list[Source]
-    route: str
+    route: Route
     rewritten_queries: list[str]
     retrieval_attempts: list[tuple[str, list[str]]]
 
@@ -108,14 +107,8 @@ def router_node(state: AgentState) -> dict:
     }
 
 
-def route_after_router(state: AgentState) -> Literal["retrieve", "direct", "out_of_scope"]:
-    route = state["route"]
-    # why not just return route?
-    if route == "direct":
-        return "direct"
-    if route == "out_of_scope":
-        return "out_of_scope"
-    return "retrieve"
+def route_after_router(state: AgentState) -> Route:
+    return state["route"]
 
 
 def out_of_scope_node(state: AgentState) -> dict:
