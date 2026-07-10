@@ -11,6 +11,7 @@ def build_llm(settings: Settings) -> ChatOpenAI:
         return ChatOpenAI(
             model=settings.llm_model,
             api_key=settings.openai_api_key,
+            temperature=0,
         )
 
     if settings.llm_provider == "openrouter":
@@ -18,6 +19,7 @@ def build_llm(settings: Settings) -> ChatOpenAI:
             model=settings.llm_model,
             base_url=settings.openrouter_base_url,
             api_key=settings.openrouter_api_key,
+            temperature=0,
         )
 
     raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")

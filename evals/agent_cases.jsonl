@@ -1,0 +1,10 @@
+{"id":"router_direct","family":"router","question":"Hello, what can you do?","expected":{"route":"direct","has_sources":false}}
+{"id":"router_out_of_scope","family":"router","question":"What was Tesla's revenue in 2024?","expected":{"route":"out_of_scope","refusal":true}}
+{"id":"router_retrieve","family":"router","question":"What is AirCover for Hosts?","expected":{"route":"retrieve","has_sources":true}}
+{"id":"grounding_tesla_revenue","family":"grounding","question":"What was Tesla's revenue in 2024?","expected":{"route":"out_of_scope","refusal":true,"must_not_contain":["Tesla's revenue was","$97","97.7 billion"]}}
+{"id":"grounding_apple_business_model","family":"grounding","question":"What is Apple's business model?","expected":{"route":"out_of_scope","refusal":true}}
+{"id":"factual_aircover_property_damage","family":"factual","question":"How much property damage protection does AirCover for Hosts provide per stay?","expected":{"must_contain_any":["$3 million","3 million","3,000,000"],"has_sources":true}}
+{"id":"factual_aircover_liability","family":"factual","question":"How much liability coverage does AirCover for Hosts include?","expected":{"must_contain_any":["$1 million","1 million","1,000,000"],"has_sources":true}}
+{"id":"exact_term_reserve_now_pay_later","family":"exact_term","question":"What is Reserve Now, Pay Later?","expected":{"route":"retrieve","has_sources":true,"must_contain_any":["reserve now, pay later","pay later"]}}
+{"id":"exact_term_adjusted_ebitda","family":"exact_term","question":"What is Airbnb's Adjusted EBITDA?","expected":{"route":"retrieve","has_sources":true,"must_contain_any":["adjusted ebitda","ebitda"]}}
+{"id":"rewrite_loop_make_money","family":"rewrite_loop","question":"How does Airbnb make money?","expected":{"route":"retrieve","must_contain_any":["revenue","service fee","service fees","booking","host","guest"],"refusal":false,"has_sources":true}}

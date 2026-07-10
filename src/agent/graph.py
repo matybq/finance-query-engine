@@ -111,7 +111,14 @@ def router_node(state: AgentState) -> dict:
                     "to a brief explanation. Use direct ONLY for meta/help/greetings about the assistant "
                     "itself, such as 'hello' or 'what can you do?'. NEVER use direct for factual questions. "
                     "Use retrieve for factual questions about Airbnb or the indexed Airbnb 10-K FY2025 corpus. "
-                    "Use out_of_scope for questions about other companies or topics outside the indexed corpus.",
+                    "The corpus is the Airbnb 10-K FY2025; questions may reference products, programs, "
+                    "metrics, or terms from those documents without naming the company, and those questions "
+                    "must route to retrieve. Do not require the question to include Airbnb or 10-K when it "
+                    "asks what a named item is; named items may be corpus products, programs, metrics, or terms. "
+                    "Use out_of_scope ONLY when the question is clearly about a "
+                    "different company or a topic unrelated to the indexed documents. When uncertain between "
+                    "retrieve and out_of_scope, choose retrieve; downstream grading and grounding handle "
+                    "irrelevant results.",
                 ),
                 ("human", state["question"]),
             ]
