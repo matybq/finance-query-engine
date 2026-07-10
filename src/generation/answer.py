@@ -18,7 +18,7 @@ class AnswerResult:
 def format_context(documents: list[Document]) -> str:
     """Format retrieved chunks as source-labeled context for the LLM."""
     return "\n\n".join(
-        f"Source: {doc.metadata['source']} ({doc.metadata['section']})\n{doc.page_content}"
+        f"Source: {doc.metadata.get('source', 'unknown')} ({doc.metadata.get('section', 'unknown')})\n{doc.page_content}"
         for doc in documents
     )
 
@@ -40,7 +40,7 @@ def unique_sources(documents: list[Document]) -> list[tuple[str, str]]:
     seen_sources = set()
 
     for doc in documents:
-        source_ref = (doc.metadata["source"], doc.metadata["section"])
+        source_ref = (doc.metadata.get("source", "unknown"), doc.metadata.get("section", "unknown"))
 
         if source_ref not in seen_sources:
             seen_sources.add(source_ref)
@@ -49,9 +49,9 @@ def unique_sources(documents: list[Document]) -> list[tuple[str, str]]:
     return sources
 
 
-def answer(question: str, k: int = 4) -> AnswerResult:
+def generate(question: str, documents: list[Document]) -> AnswerResult:
+    """Generate a grounded answer from already-retrieved documents."""
     settings = get_settings()
-    documents = hybrid.retrieve(question, k=k)
     context = format_context(documents)
     messages = build_messages(context, question)
 
@@ -59,3 +59,9 @@ def answer(question: str, k: int = 4) -> AnswerResult:
     response = llm.invoke(messages)
 
     return AnswerResult(answer=str(response.content), sources=unique_sources(documents))
+
+
+def answer(question: str, k: int = 4) -> AnswerResult:
+    """Retrieve documents and generate an answer for the plain RAG baseline."""
+    documents = hybrid.retrieve(question, k=k)
+    return generate(question, documents)

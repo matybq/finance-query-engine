@@ -41,7 +41,7 @@ Why this corpus: one dense public filing with technical language, figures, and l
 
 ## Status
 
-Early development. **Fase 2 is done**: hybrid retrieval (dense + BM25 + weighted RRF) now powers generation.
+Early development. **Fase 3 is done**: agentic routing + self-correcting retrieval now power generation.
 
 Design docs (architecture, ADR log, phase status) are maintained locally and will be published when the core is complete.
 
