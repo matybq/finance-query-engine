@@ -1,5 +1,5 @@
 """Build the local Chroma index from plain-text filing sections."""
-# ver
+
 import json
 from pathlib import Path
 from shutil import rmtree
@@ -86,7 +86,13 @@ def count_chunks_jsonl(path: Path) -> int:
 def build_index() -> tuple[int, int, str, Path, Path]:
     settings = get_settings()
     documents = load_documents(settings.data_raw_dir)
+    if not documents:
+        raise RuntimeError(f"No .txt documents found in {settings.data_raw_dir}.")
+
     chunks = split_documents(documents)
+    if not chunks:
+        raise RuntimeError("No chunks were created from the loaded documents.")
+
     chunk_ids = assign_chunk_ids(chunks)
     persist_dir = settings.chroma_persist_dir
     assert persist_dir is not None
