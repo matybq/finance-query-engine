@@ -1,5 +1,5 @@
 """Build the local Chroma index from plain-text filing sections."""
-
+# ver
 import json
 from pathlib import Path
 from shutil import rmtree
@@ -89,6 +89,7 @@ def build_index() -> tuple[int, int, str, Path, Path]:
     chunks = split_documents(documents)
     chunk_ids = assign_chunk_ids(chunks)
     persist_dir = settings.chroma_persist_dir
+    assert persist_dir is not None
     tmp_persist_dir = persist_dir.with_name(f"{persist_dir.name}.tmp")
     chunks_path = settings.data_processed_dir / "chunks.jsonl"
 
