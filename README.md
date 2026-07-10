@@ -49,7 +49,13 @@ Design docs (architecture, ADR log, phase status) are maintained locally and wil
 
 ```bash
 uv run python -m src.ingestion.ingest
-uv run python -m src.ask "What is AirCover for Hosts?"
+./finance-ask "What is AirCover for Hosts?"
+```
+
+For an interactive session with a short welcome guide:
+
+```bash
+./finance-ask
 ```
 
 ## Setup
