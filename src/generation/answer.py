@@ -14,6 +14,23 @@ class AnswerResult:
     sources: list[tuple[str, str]]
 
 
+def build_llm(settings):
+    if settings.llm_provider == "openai":
+        return ChatOpenAI(
+            model=settings.llm_model,
+            api_key=settings.openai_api_key,
+        )
+
+    if settings.llm_provider == "openrouter":
+        return ChatOpenAI(
+            model=settings.llm_model,
+            base_url=settings.openrouter_base_url,
+            api_key=settings.openrouter_api_key,
+        )
+
+    raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
+
+
 def answer(question: str, k: int = 4) -> AnswerResult:
     settings = get_settings()
     documents = hybrid.retrieve(question, k=k)
@@ -29,22 +46,16 @@ def answer(question: str, k: int = 4) -> AnswerResult:
         ("human", f"Context:\n{context}\n\nQuestion: {question}"),
     ]
 
-    if settings.llm_provider == "openai":
-        llm = ChatOpenAI(model=settings.llm_model, api_key=settings.openai_api_key)
-    else:
-        llm = ChatOpenAI(
-            model=settings.llm_model,
-            base_url=settings.openrouter_base_url,
-            api_key=settings.openrouter_api_key,
-        )
+    llm = build_llm(settings)
     response = llm.invoke(messages)
 
     sources = []
-    seen = set()
+    seen_sources = set()
     for doc in documents:
-        source = (doc.metadata["source"], doc.metadata["section"])
-        if source not in seen:
-            seen.add(source)
-            sources.append(source)
+        source_ref = (doc.metadata["source"], doc.metadata["section"])
+
+        if source_ref not in seen_sources:
+            seen_sources.add(source_ref)
+            sources.append(source_ref)
 
     return AnswerResult(answer=str(response.content), sources=sources)
