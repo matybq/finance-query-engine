@@ -56,6 +56,10 @@ def check_expectations(case: dict[str, Any], result: AgentResult) -> list[str]:
     if "route" in expected and result.route != expected["route"]:
         failures.append(f"route expected={expected['route']!r} actual={result.route!r}")
 
+    allowed_routes = expected.get("allowed_routes", [])
+    if allowed_routes and result.route not in allowed_routes:
+        failures.append(f"allowed_routes expected_one_of={allowed_routes!r} actual={result.route!r}")
+
     for text in expected.get("must_contain", []):
         if text.lower() not in lower_answer:
             failures.append(

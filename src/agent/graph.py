@@ -19,9 +19,14 @@ MAX_REWRITES = 2
 # The agent retrieves deeper than the plain-RAG baseline (k=4) because measured fused ranks put answering chunks at 5–7 after query rewriting.
 # The Fase 2 k=4 hallucination risk is handled structurally here by the router: out-of-scope questions never reach retrieval.
 RETRIEVE_K = 6
+INSUFFICIENT_EVIDENCE_ANSWER = (
+    "I do not know based on the retrieved context. "
+    "The indexed sources do not provide enough evidence to answer this question."
+)
 
 
 Route = Literal["retrieve", "direct", "out_of_scope"]
+GradeRoute = Literal["generate", "rewrite", "insufficient_evidence"]
 Source = tuple[str, str]
 GradingAttempt = tuple[str, bool, str]
 StructuredOutput = TypeVar("StructuredOutput", bound=BaseModel)
@@ -170,6 +175,16 @@ def _format_grade_context(documents: list[Document]) -> str:
     )
 
 
+def _format_grading_feedback(grading_attempts: list[GradingAttempt]) -> str:
+    if not grading_attempts:
+        return "- No previous grading feedback."
+
+    return "\n".join(
+        f"- Query: {query}\n  Sufficient: {sufficient}\n  Reason: {reason}"
+        for query, sufficient, reason in grading_attempts
+    )
+
+
 def grade_node(state: AgentState) -> dict:
     if not state["documents"]:
         grading_attempts = list(state.get("grading_attempts", []))
@@ -206,16 +221,17 @@ def grade_node(state: AgentState) -> dict:
     return {"sufficient": decision.sufficient, "grading_attempts": grading_attempts}
 
 
-def route_after_grade(state: AgentState) -> Literal["generate", "rewrite"]:
+def route_after_grade(state: AgentState) -> GradeRoute:
     if state.get("sufficient"):
         return "generate"
     if state["rewrite_count"] < MAX_REWRITES:
         return "rewrite"
-    return "generate"
+    return "insufficient_evidence"
 
 
 def rewrite_node(state: AgentState) -> dict:
     previous_queries = [state["question"], *state.get("rewritten_queries", [])]
+    grading_feedback = _format_grading_feedback(state.get("grading_attempts", []))
     structured_llm = _llm().with_structured_output(RewriteDecision)
     decision = _parse_structured_output(
         RewriteDecision,
@@ -224,16 +240,21 @@ def rewrite_node(state: AgentState) -> dict:
                 (
                     "system",
                     "Set the `query` field to a concise keyword-style search query: a short noun phrase, "
-                    "not a question. Do not use interrogative words or full sentences. Use formal terminology "
-                    "as found in SEC 10-K filings instead of colloquial wording. Produce a query that differs "
-                    "meaningfully from all previous search attempts.",
+                    "not a question. Use the grading feedback to add missing factual terms from the original "
+                    "information need. Prefer specific filing/business terms over broad generic terms. "
+                    "For business-model questions, include concrete earning-mechanism terms such as fees, "
+                    "payments, revenue recognition, customers, hosts, or guests when relevant. Do not use "
+                    "interrogative words or full sentences. Produce a query that is more specific than, and "
+                    "meaningfully different from, all previous search attempts.",
                 ),
                 (
                     "human",
                     "Original question: "
                     f"{state['question']}\nCurrent search query: {state['search_query']}\n"
                     "Previous search attempts:\n"
-                    + "\n".join(f"- {query}" for query in previous_queries),
+                    + "\n".join(f"- {query}" for query in previous_queries)
+                    + "\n\nGrading feedback:\n"
+                    + grading_feedback,
                 ),
             ]
         ),
@@ -252,6 +273,10 @@ def generate_node(state: AgentState) -> dict:
     return {"answer": result.answer, "sources": result.sources}
 
 
+def insufficient_evidence_node(state: AgentState) -> dict:
+    return {"answer": INSUFFICIENT_EVIDENCE_ANSWER, "sources": []}
+
+
 def build_graph():
     graph = StateGraph(AgentState, input_schema=AgentInput)
 
@@ -262,15 +287,21 @@ def build_graph():
     graph.add_node("grade", grade_node)
     graph.add_node("rewrite", rewrite_node)
     graph.add_node("generate", generate_node)
+    graph.add_node("insufficient_evidence", insufficient_evidence_node)
 
     graph.add_edge(START, "router")
     graph.add_conditional_edges("router", route_after_router, ["retrieve", "direct", "out_of_scope"])
     graph.add_edge("direct", END)
     graph.add_edge("out_of_scope", END)
     graph.add_edge("retrieve", "grade")
-    graph.add_conditional_edges("grade", route_after_grade, ["generate", "rewrite"])
+    graph.add_conditional_edges(
+        "grade",
+        route_after_grade,
+        ["generate", "rewrite", "insufficient_evidence"],
+    )
     graph.add_edge("rewrite", "retrieve")
     graph.add_edge("generate", END)
+    graph.add_edge("insufficient_evidence", END)
 
     return graph.compile()
 

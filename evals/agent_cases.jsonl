@@ -3,6 +3,7 @@
 {"id":"router_retrieve","family":"router","question":"What is AirCover for Hosts?","expected":{"route":"retrieve","has_sources":true}}
 {"id":"grounding_tesla_revenue","family":"grounding","question":"What was Tesla's revenue in 2024?","expected":{"route":"out_of_scope","refusal":true,"must_not_contain":["Tesla's revenue was","$97","97.7 billion"]}}
 {"id":"grounding_apple_business_model","family":"grounding","question":"What is Apple's business model?","expected":{"route":"out_of_scope","refusal":true}}
+{"id":"guardrail_unknown_airbnb_detail","family":"guardrail","question":"What is Airbnb's CEO's favorite food?","expected":{"allowed_routes":["retrieve","out_of_scope"],"refusal":true,"has_sources":false}}
 {"id":"factual_aircover_property_damage","family":"factual","question":"How much property damage protection does AirCover for Hosts provide per stay?","expected":{"must_contain_any":["$3 million","3 million","3,000,000"],"has_sources":true}}
 {"id":"factual_aircover_liability","family":"factual","question":"How much liability coverage does AirCover for Hosts include?","expected":{"must_contain_any":["$1 million","1 million","1,000,000"],"has_sources":true}}
 {"id":"exact_term_reserve_now_pay_later","family":"exact_term","question":"What is Reserve Now, Pay Later?","expected":{"route":"retrieve","has_sources":true,"must_contain_any":["reserve now, pay later","pay later"]}}
