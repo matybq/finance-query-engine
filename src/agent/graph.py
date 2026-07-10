@@ -25,6 +25,10 @@ Source = tuple[str, str]
 StructuredOutput = TypeVar("StructuredOutput", bound=BaseModel)
 
 
+class AgentInput(TypedDict):
+    question: str
+
+
 class AgentState(TypedDict):
     question: str  # original question
     search_query: str  # the search query used to retrieve documents
@@ -222,7 +226,7 @@ def generate_node(state: AgentState) -> dict:
 
 
 def build_graph():
-    graph = StateGraph(AgentState)
+    graph = StateGraph(AgentState, input_schema=AgentInput)
 
     graph.add_node("router", router_node)
     graph.add_node("direct", direct_node)
