@@ -160,6 +160,17 @@ def _format_grade_context(documents: list[Document]) -> str:
 
 
 def grade_node(state: AgentState) -> dict:
+    if not state["documents"]:
+        grading_attempts = list(state.get("grading_attempts", []))
+        grading_attempts.append(
+            (
+                state["search_query"],
+                False,
+                "No documents were retrieved for this query.",
+            )
+        )
+        return {"sufficient": False, "grading_attempts": grading_attempts}
+
     structured_llm = _llm().with_structured_output(GradeDecision)
     decision = _parse_structured_output(
         GradeDecision,
