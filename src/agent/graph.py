@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, NotRequired, TypedDict
+from typing import Literal, NotRequired, TypeVar, TypedDict
 
 from langchain_core.documents import Document
 from langgraph.graph import END, START, StateGraph
@@ -22,6 +22,7 @@ RETRIEVE_K = 6
 
 
 Source = tuple[str, str]
+StructuredOutput = TypeVar("StructuredOutput", bound=BaseModel)
 
 
 class AgentState(TypedDict):
@@ -62,24 +63,34 @@ class AgentResult:
     retrieval_attempts: list[tuple[str, list[str]]]
 
 
+def _parse_structured_output(
+    model: type[StructuredOutput],
+    value: object,
+) -> StructuredOutput:
+    return model.model_validate(value)
+
+
 def _llm():
     return build_llm(get_settings())
 
 
 def router_node(state: AgentState) -> dict:
     structured_llm = _llm().with_structured_output(RouteDecision)
-    decision = structured_llm.invoke(
-        [
-            (
-                "system",
-                "Route the user question for a corpus-grounded finance assistant. "
-                "Use direct ONLY for meta/help/greetings about the assistant itself, such as 'hello' or "
-                "'what can you do?'. NEVER use direct for factual questions. "
-                "Use retrieve for factual questions about Airbnb or the indexed Airbnb 10-K FY2025 corpus. "
-                "Use out_of_scope for questions about other companies or topics outside the indexed corpus.",
-            ),
-            ("human", state["question"]),
-        ]
+    decision = _parse_structured_output(
+        RouteDecision,
+        structured_llm.invoke(
+            [
+                (
+                    "system",
+                    "Route the user question for a corpus-grounded finance assistant. "
+                    "Use direct ONLY for meta/help/greetings about the assistant itself, such as 'hello' or "
+                    "'what can you do?'. NEVER use direct for factual questions. "
+                    "Use retrieve for factual questions about Airbnb or the indexed Airbnb 10-K FY2025 corpus. "
+                    "Use out_of_scope for questions about other companies or topics outside the indexed corpus.",
+                ),
+                ("human", state["question"]),
+            ]
+        ),
     )
     return { # state init - refactor ?
         "search_query": state["question"],
@@ -144,19 +155,22 @@ def _format_grade_context(documents: list[Document]) -> str:
 
 def grade_node(state: AgentState) -> dict:
     structured_llm = _llm().with_structured_output(GradeDecision)
-    decision = structured_llm.invoke(
-        [
-            (
-                "system",
-                "Decide whether the retrieved chunks contain enough information to answer the original question. "
-                "Judge against the original question, not the retrieval query. Return sufficient=true only when "
-                "the chunks include the specific facts needed for a grounded answer.",
-            ),
-            (
-                "human",
-                f"Original question: {state['question']}\n\nRetrieved chunks:\n{_format_grade_context(state['documents'])}",
-            ),
-        ]
+    decision = _parse_structured_output(
+        GradeDecision,
+        structured_llm.invoke(
+            [
+                (
+                    "system",
+                    "Decide whether the retrieved chunks contain enough information to answer the original question. "
+                    "Judge against the original question, not the retrieval query. Return sufficient=true only when "
+                    "the chunks include the specific facts needed for a grounded answer.",
+                ),
+                (
+                    "human",
+                    f"Original question: {state['question']}\n\nRetrieved chunks:\n{_format_grade_context(state['documents'])}",
+                ),
+            ]
+        ),
     )
     return {"sufficient": decision.sufficient}
 
@@ -172,23 +186,26 @@ def route_after_grade(state: AgentState) -> Literal["generate", "rewrite"]:
 def rewrite_node(state: AgentState) -> dict:
     previous_queries = [state["question"], *state.get("rewritten_queries", [])]
     structured_llm = _llm().with_structured_output(RewriteDecision)
-    decision = structured_llm.invoke(
-        [
-            (
-                "system",
-                "Rewrite the search query as a concise keyword-style search query: a short noun phrase, "
-                "not a question. Do not use interrogative words or full sentences. Use formal terminology "
-                "as found in SEC 10-K filings instead of colloquial wording. Produce a query that differs "
-                "meaningfully from all previous search attempts. Return only the query text.",
-            ),
-            (
-                "human",
-                "Original question: "
-                f"{state['question']}\nCurrent search query: {state['search_query']}\n"
-                "Previous search attempts:\n"
-                + "\n".join(f"- {query}" for query in previous_queries),
-            ),
-        ]
+    decision = _parse_structured_output(
+        RewriteDecision,
+        structured_llm.invoke(
+            [
+                (
+                    "system",
+                    "Rewrite the search query as a concise keyword-style search query: a short noun phrase, "
+                    "not a question. Do not use interrogative words or full sentences. Use formal terminology "
+                    "as found in SEC 10-K filings instead of colloquial wording. Produce a query that differs "
+                    "meaningfully from all previous search attempts. Return only the query text.",
+                ),
+                (
+                    "human",
+                    "Original question: "
+                    f"{state['question']}\nCurrent search query: {state['search_query']}\n"
+                    "Previous search attempts:\n"
+                    + "\n".join(f"- {query}" for query in previous_queries),
+                ),
+            ]
+        ),
     )
     rewritten_queries = list(state.get("rewritten_queries", []))
     rewritten_queries.append(decision.query)
