@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass
 
-from langchain_openai import ChatOpenAI
+from langchain_core.documents import Document
 
 from src.config import get_settings
+from src.generation.llm import build_llm
 from src.retrieval import hybrid
 
 
@@ -14,31 +15,17 @@ class AnswerResult:
     sources: list[tuple[str, str]]
 
 
-def build_llm(settings):
-    if settings.llm_provider == "openai":
-        return ChatOpenAI(
-            model=settings.llm_model,
-            api_key=settings.openai_api_key,
-        )
-
-    if settings.llm_provider == "openrouter":
-        return ChatOpenAI(
-            model=settings.llm_model,
-            base_url=settings.openrouter_base_url,
-            api_key=settings.openrouter_api_key,
-        )
-
-    raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
-
-
-def answer(question: str, k: int = 4) -> AnswerResult:
-    settings = get_settings()
-    documents = hybrid.retrieve(question, k=k)
-    context = "\n\n".join(
+def format_context(documents: list[Document]) -> str:
+    """Format retrieved chunks as source-labeled context for the LLM."""
+    return "\n\n".join(
         f"Source: {doc.metadata['source']} ({doc.metadata['section']})\n{doc.page_content}"
         for doc in documents
     )
-    messages = [
+
+
+def build_messages(context: str, question: str) -> list[tuple[str, str]]:
+    """Build the grounded generation prompt."""
+    return [
         (
             "system",
             "Answer only from the provided context. If the context is insufficient, say you do not know.",
@@ -46,11 +33,12 @@ def answer(question: str, k: int = 4) -> AnswerResult:
         ("human", f"Context:\n{context}\n\nQuestion: {question}"),
     ]
 
-    llm = build_llm(settings)
-    response = llm.invoke(messages)
 
+def unique_sources(documents: list[Document]) -> list[tuple[str, str]]:
+    """Return unique source-section pairs while preserving retrieval order."""
     sources = []
     seen_sources = set()
+
     for doc in documents:
         source_ref = (doc.metadata["source"], doc.metadata["section"])
 
@@ -58,4 +46,16 @@ def answer(question: str, k: int = 4) -> AnswerResult:
             seen_sources.add(source_ref)
             sources.append(source_ref)
 
-    return AnswerResult(answer=str(response.content), sources=sources)
+    return sources
+
+
+def answer(question: str, k: int = 4) -> AnswerResult:
+    settings = get_settings()
+    documents = hybrid.retrieve(question, k=k)
+    context = format_context(documents)
+    messages = build_messages(context, question)
+
+    llm = build_llm(settings)
+    response = llm.invoke(messages)
+
+    return AnswerResult(answer=str(response.content), sources=unique_sources(documents))
