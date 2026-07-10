@@ -153,7 +153,8 @@ def direct_node(state: AgentState) -> dict:
                 "system",
                 "You are a corpus-grounded financial Q&A assistant. Answer briefly. "
                 "Explain that you can answer questions about the indexed Airbnb 10-K FY2025 "
-                "Items 1, 1A, and 7, and that factual answers use retrieved evidence and sources.",
+                "Items 1, 1A, and 7, and that factual answers use retrieved evidence and sources. "
+                "Do not mention model training data, cutoff dates, or general web knowledge.",
             ),
             ("human", state["question"]),
         ]
