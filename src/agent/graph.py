@@ -23,6 +23,7 @@ RETRIEVE_K = 6
 
 Route = Literal["retrieve", "direct", "out_of_scope"]
 Source = tuple[str, str]
+GradingAttempt = tuple[str, bool, str]
 StructuredOutput = TypeVar("StructuredOutput", bound=BaseModel)
 
 
@@ -38,19 +39,23 @@ class AgentState(TypedDict):
     sources: list[Source]  # the sources of the retrieved documents
     rewrite_count: int  # the number of times the question has been rewritten
     route: Route  # the next route for the user's question
+    route_reason: NotRequired[str]  # why the router chose the route
     sufficient: NotRequired[bool]  # whether the retrieved documents contain enough information to answer the original question
     rewritten_queries: NotRequired[list[str]]  # the rewritten queries used to retrieve documents
     retrieval_attempts: NotRequired[list[tuple[str, list[str]]]]  # the retrieval attempts and their results
+    grading_attempts: NotRequired[list[GradingAttempt]]  # the grading decisions for each retrieval attempt
 
 
 class RouteDecision(BaseModel):
     route: Route = Field(description="The next route for the user's question.")
+    reason: str = Field(description="A brief explanation for the chosen route.")
 
 
 class GradeDecision(BaseModel):
     sufficient: bool = Field(
         description="Whether the retrieved chunks contain enough information to answer the original question."
     )
+    reason: str = Field(description="A brief explanation for the sufficiency decision.")
 
 
 class RewriteDecision(BaseModel):
@@ -62,8 +67,10 @@ class AgentResult:
     answer: str
     sources: list[Source]
     route: Route
+    route_reason: str
     rewritten_queries: list[str]
     retrieval_attempts: list[tuple[str, list[str]]]
+    grading_attempts: list[GradingAttempt]
 
 
 def _parse_structured_output(
@@ -85,9 +92,9 @@ def router_node(state: AgentState) -> dict:
             [
                 (
                     "system",
-                    "Set the `route` field for a corpus-grounded finance assistant. "
-                    "Use direct ONLY for meta/help/greetings about the assistant itself, such as 'hello' or "
-                    "'what can you do?'. NEVER use direct for factual questions. "
+                    "Set the `route` field for a corpus-grounded finance assistant and set `reason` "
+                    "to a brief explanation. Use direct ONLY for meta/help/greetings about the assistant "
+                    "itself, such as 'hello' or 'what can you do?'. NEVER use direct for factual questions. "
                     "Use retrieve for factual questions about Airbnb or the indexed Airbnb 10-K FY2025 corpus. "
                     "Use out_of_scope for questions about other companies or topics outside the indexed corpus.",
                 ),
@@ -102,8 +109,10 @@ def router_node(state: AgentState) -> dict:
         "sources": [],
         "rewrite_count": 0,
         "route": decision.route,
+        "route_reason": decision.reason,
         "rewritten_queries": [],
         "retrieval_attempts": [],
+        "grading_attempts": [],
     }
 
 
@@ -159,8 +168,9 @@ def grade_node(state: AgentState) -> dict:
                 (
                     "system",
                     "Set the `sufficient` field to indicate whether the retrieved chunks contain enough information "
-                    "to answer the original question. Judge against the original question, not the retrieval query. "
-                    "Use sufficient=true only when the chunks include the specific facts needed for a grounded answer.",
+                    "to answer the original question, and set `reason` to a brief explanation. Judge against "
+                    "the original question, not the retrieval query. Use sufficient=true only when the chunks "
+                    "include the specific facts needed for a grounded answer.",
                 ),
                 (
                     "human",
@@ -169,7 +179,9 @@ def grade_node(state: AgentState) -> dict:
             ]
         ),
     )
-    return {"sufficient": decision.sufficient}
+    grading_attempts = list(state.get("grading_attempts", []))
+    grading_attempts.append((state["search_query"], decision.sufficient, decision.reason))
+    return {"sufficient": decision.sufficient, "grading_attempts": grading_attempts}
 
 
 def route_after_grade(state: AgentState) -> Literal["generate", "rewrite"]:
@@ -250,6 +262,8 @@ def run(question: str) -> AgentResult:
         answer=final_state["answer"],
         sources=final_state["sources"],
         route=final_state["route"],
+        route_reason=final_state.get("route_reason", ""),
         rewritten_queries=final_state.get("rewritten_queries", []),
         retrieval_attempts=final_state.get("retrieval_attempts", []),
+        grading_attempts=final_state.get("grading_attempts", []),
     )
