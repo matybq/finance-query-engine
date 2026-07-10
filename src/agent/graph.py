@@ -84,6 +84,21 @@ def _llm():
     return build_llm(get_settings())
 
 
+def build_initial_state_update(question: str, decision: RouteDecision) -> dict:
+    return {
+        "search_query": question,
+        "documents": [],
+        "answer": "",
+        "sources": [],
+        "rewrite_count": 0,
+        "route": decision.route,
+        "route_reason": decision.reason,
+        "rewritten_queries": [],
+        "retrieval_attempts": [],
+        "grading_attempts": [],
+    }
+
+
 def router_node(state: AgentState) -> dict:
     structured_llm = _llm().with_structured_output(RouteDecision)
     decision = _parse_structured_output(
@@ -102,18 +117,7 @@ def router_node(state: AgentState) -> dict:
             ]
         ),
     )
-    return { # state init - refactor ?
-        "search_query": state["question"],
-        "documents": [],
-        "answer": "",
-        "sources": [],
-        "rewrite_count": 0,
-        "route": decision.route,
-        "route_reason": decision.reason,
-        "rewritten_queries": [],
-        "retrieval_attempts": [],
-        "grading_attempts": [],
-    }
+    return build_initial_state_update(state["question"], decision)
 
 
 def route_after_router(state: AgentState) -> Route:
