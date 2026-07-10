@@ -11,8 +11,12 @@ ingestion → dual index (Chroma + BM25) → hybrid retrieval (dense + sparse + 
 Canonical agent flow:
 
 ```text
-router → retrieve (tool) → grade → (rewrite loop back to retrieve) → generate → guardrail
+router → retrieve → grade → generate
+                  ↘ rewrite ↺
+                  ↘ insufficient_evidence
 ```
+
+The first guardrail is structural: if retrieved evidence is still insufficient after the rewrite budget is exhausted, the graph routes to `insufficient_evidence` instead of calling generation.
 
 ## Corpus
 
@@ -41,7 +45,7 @@ Why this corpus: one dense public filing with technical language, figures, and l
 
 ## Status
 
-Early development. **Fase 3 is done**: agentic routing + self-correcting retrieval now power generation.
+Early development. **Fase 3 is done**: agentic routing + self-correcting retrieval now power generation. A first structural guardrail and a lightweight functional eval harness are also in place.
 
 Design docs (architecture, ADR log, phase status) are maintained locally and will be published when the core is complete.
 
@@ -57,6 +61,30 @@ For an interactive session with a short welcome guide:
 ```bash
 ./finance-ask
 ```
+
+## Evaluation
+
+The project includes a lightweight deterministic eval harness for the LangGraph agent:
+
+```bash
+uv run python evals/evaluate_agent.py
+```
+
+It validates core behavior across router decisions, out-of-corpus refusals, factual retrieval, exact-term regressions, rewrite-loop behavior, and the structural insufficient-evidence guardrail.
+
+Current functional eval result:
+
+| Family | Passed |
+|---|---:|
+| router | 3/3 |
+| grounding | 2/2 |
+| guardrail | 1/1 |
+| factual | 2/2 |
+| exact_term | 2/2 |
+| rewrite_loop | 1/1 |
+| overall | 11/11 |
+
+These checks are functional regression tests, not full RAGAS metrics. RAGAS remains planned for the later evaluation phase.
 
 ## Setup
 
