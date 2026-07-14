@@ -11,5 +11,8 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 
+evals/experiments/*
+!evals/experiments/.gitkeep
+
 # design docs kept local for now
 docs/

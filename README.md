@@ -64,13 +64,15 @@ For an interactive session with a short welcome guide:
 
 ## Evaluation
 
-The project includes a lightweight deterministic eval harness for the LangGraph agent:
+The project includes two evaluation layers.
+
+### Functional regression checks
 
 ```bash
 uv run python evals/evaluate_agent.py
 ```
 
-It validates core behavior across router decisions, out-of-corpus refusals, factual retrieval, exact-term regressions, rewrite-loop behavior, and the structural insufficient-evidence guardrail.
+This lightweight deterministic harness validates core behavior across router decisions, out-of-corpus refusals, factual retrieval, exact-term regressions, rewrite-loop behavior, and the structural insufficient-evidence guardrail.
 
 Current functional eval result:
 
@@ -84,7 +86,28 @@ Current functional eval result:
 | rewrite_loop | 1/1 |
 | overall | 11/11 |
 
-These checks are functional regression tests, not full RAGAS metrics. RAGAS remains planned for the later evaluation phase.
+### RAGAS report-only evals
+
+A first RAGAS suite lives in `evals/ragas_cases.jsonl` and measures semantic RAG quality over a small set of gold-answer cases:
+
+- `faithfulness` — whether the answer is supported by retrieved chunks
+- `context_recall` — whether retrieved chunks contain the facts needed by the reference answer
+- `factual_correctness` — whether the answer matches the reference answer
+
+Install the optional eval dependencies and run:
+
+```bash
+uv sync --extra eval
+uv run --extra eval python evals/evaluate_ragas.py
+```
+
+To control cost while iterating:
+
+```bash
+uv run --extra eval python evals/evaluate_ragas.py --limit 2
+```
+
+RAGAS results are diagnostic and report-only for now. CSV reports are written to `evals/experiments/` and are gitignored.
 
 ## Setup
 
