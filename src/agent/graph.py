@@ -76,6 +76,8 @@ class AgentResult:
     rewritten_queries: list[str]
     retrieval_attempts: list[tuple[str, list[str]]]
     grading_attempts: list[GradingAttempt]
+    retrieved_contexts: list[str]
+    retrieved_chunk_ids: list[str]
 
 
 def _parse_structured_output(
@@ -312,6 +314,7 @@ _GRAPH = build_graph()
 
 def run(question: str) -> AgentResult:
     final_state = _GRAPH.invoke({"question": question})
+    documents = final_state.get("documents", [])
     return AgentResult(
         answer=final_state["answer"],
         sources=final_state["sources"],
@@ -320,4 +323,6 @@ def run(question: str) -> AgentResult:
         rewritten_queries=final_state.get("rewritten_queries", []),
         retrieval_attempts=final_state.get("retrieval_attempts", []),
         grading_attempts=final_state.get("grading_attempts", []),
+        retrieved_contexts=[document.page_content for document in documents],
+        retrieved_chunk_ids=[str(document.metadata.get("chunk_id", "")) for document in documents],
     )
