@@ -18,3 +18,8 @@ eval = [
     "langchain-community<0.4",
     "ragas>=0.3,<1.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
