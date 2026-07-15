@@ -26,10 +26,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: uv sync --locked --extra eval
+        run: uv sync --locked --extra eval --group dev
 
       - name: Compile Python sources
-        run: uv run --locked --extra eval python -m compileall -q src evals tests
+        run: uv run --locked --extra eval --group dev python -m compileall -q src evals tests
 
       - name: Smoke-test RAGAS imports
-        run: uv run --locked --extra eval python -c "from evals.evaluate_ragas import import_ragas; import_ragas(); print('ragas imports ok')"
+        run: uv run --locked --extra eval --group dev python -c "from evals.evaluate_ragas import import_ragas; import_ragas(); print('ragas imports ok')"
+
+      - name: Run unit tests
+        run: uv run --locked --extra eval --group dev pytest
