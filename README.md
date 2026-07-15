@@ -32,20 +32,29 @@ Why this corpus: one dense public filing with technical language, figures, and l
 
 ## Stack
 
+Implemented:
+
 - LangGraph for orchestration
 - OpenRouter for LLM access
 - OpenAI `text-embedding-3-small` for embeddings
 - Chroma for dense storage
 - BM25 for sparse retrieval
 - RRF for rank fusion
-- RAGAS for evaluation
-- FastAPI for serving
+- RAGAS for report-only evaluation
+- pytest for unit tests
+- GitHub Actions for lightweight CI
 - uv for Python environment management
+
+Roadmap:
+
+- FastAPI for serving
 - Docker + VPS for deployment
 
 ## Status
 
-Early development. **Fase 3 is done**: agentic routing + self-correcting retrieval now power generation. A first structural guardrail and a lightweight functional eval harness are also in place.
+Early development. **Fase 3 is done**: agentic routing + self-correcting retrieval now power generation. A first structural guardrail, deterministic functional evals, a small report-only RAGAS suite, pytest unit tests, and lightweight CI are in place.
+
+The current interface is a CLI. FastAPI serving, Docker packaging, and VPS deployment remain roadmap items.
 
 Design docs (architecture, ADR log, phase status) are maintained locally and will be published when the core is complete.
 
@@ -109,6 +118,25 @@ uv run --extra eval python evals/evaluate_ragas.py --limit 2
 
 RAGAS results are diagnostic and report-only for now. CSV reports are written to `evals/experiments/` and are gitignored.
 
+### Unit tests
+
+```bash
+uv run --group dev pytest
+```
+
+These tests cover pure retrieval and formatting helpers without API keys or corpus data.
+
+### CI
+
+GitHub Actions runs lightweight checks on pushes and pull requests to `main`:
+
+- locked dependency install with eval and dev dependencies
+- Python compilation for `src`, `evals`, and `tests`
+- RAGAS import smoke test
+- pytest unit tests
+
+CI intentionally does not run the LangGraph agent or RAGAS scoring yet, because those require API keys plus the local corpus/index.
+
 ## Setup
 
 Requirements: Python >= 3.12 and `uv`.
@@ -124,7 +152,3 @@ cp .env.example .env
 ```
 
 Then fill in the required API keys and paths in `.env`. The corpus itself is not committed; `data/` is gitignored. See [Corpus](#corpus) for how it is sourced.
-
-## Honesty note
-
-This repo is intentionally not presenting fake demos or future features as finished. If something is not implemented yet, it should be treated as roadmap, not current capability.
