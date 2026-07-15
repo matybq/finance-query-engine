@@ -6,12 +6,14 @@ from dataclasses import dataclass
 from typing import Literal, NotRequired, TypeVar, TypedDict
 
 from langchain_core.documents import Document
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 
-from src.config import get_settings
+from src.config import COLLECTION_NAME, get_settings
 from src.generation import answer as generation
 from src.generation.llm import build_llm
+from src.observability.langsmith import configure_langsmith
 from src.retrieval import hybrid
 
 
@@ -23,6 +25,11 @@ INSUFFICIENT_EVIDENCE_ANSWER = (
     "I do not know based on the retrieved context. "
     "The indexed sources do not provide enough evidence to answer this question."
 )
+AGENT_RUN_CONFIG: RunnableConfig = {
+    "run_name": "finance_query_agent",
+    "tags": ["finance-query-engine", "agent"],
+    "metadata": {"corpus": COLLECTION_NAME},
+}
 
 
 Route = Literal["retrieve", "direct", "out_of_scope"]
@@ -313,7 +320,8 @@ _GRAPH = build_graph()
 
 
 def run(question: str) -> AgentResult:
-    final_state = _GRAPH.invoke({"question": question})
+    configure_langsmith(get_settings())
+    final_state = _GRAPH.invoke({"question": question}, config=AGENT_RUN_CONFIG)
     documents = final_state.get("documents", [])
     return AgentResult(
         answer=final_state["answer"],

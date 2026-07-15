@@ -3,9 +3,11 @@
 from dataclasses import dataclass
 
 from langchain_core.documents import Document
+from langchain_core.runnables import RunnableConfig
 
-from src.config import get_settings
+from src.config import COLLECTION_NAME, get_settings
 from src.generation.llm import build_llm
+from src.observability.langsmith import configure_langsmith
 from src.retrieval import hybrid
 
 
@@ -13,6 +15,13 @@ from src.retrieval import hybrid
 class AnswerResult:
     answer: str
     sources: list[tuple[str, str]]
+
+
+GENERATION_RUN_CONFIG: RunnableConfig = {
+    "run_name": "grounded_answer_generation",
+    "tags": ["finance-query-engine", "generation"],
+    "metadata": {"corpus": COLLECTION_NAME},
+}
 
 
 def format_context(documents: list[Document]) -> str:
@@ -52,11 +61,12 @@ def unique_sources(documents: list[Document]) -> list[tuple[str, str]]:
 def generate(question: str, documents: list[Document]) -> AnswerResult:
     """Generate a grounded answer from already-retrieved documents."""
     settings = get_settings()
+    configure_langsmith(settings)
     context = format_context(documents)
     messages = build_messages(context, question)
 
     llm = build_llm(settings)
-    response = llm.invoke(messages)
+    response = llm.invoke(messages, config=GENERATION_RUN_CONFIG)
 
     return AnswerResult(answer=str(response.content), sources=unique_sources(documents))
 

@@ -41,6 +41,7 @@ Implemented:
 - BM25 for sparse retrieval
 - RRF for rank fusion
 - RAGAS for report-only evaluation
+- optional LangSmith tracing for LangChain/LangGraph runs
 - pytest for unit tests
 - GitHub Actions for lightweight CI
 - uv for Python environment management
@@ -52,7 +53,7 @@ Roadmap:
 
 ## Status
 
-Early development. **Fase 3 is done**: agentic routing + self-correcting retrieval now power generation. A first structural guardrail, deterministic functional evals, a small report-only RAGAS suite, pytest unit tests, and lightweight CI are in place.
+Early development. **Fase 3 is done**: agentic routing + self-correcting retrieval now power generation. A first structural guardrail, deterministic functional evals, a small report-only RAGAS suite, optional LangSmith tracing, pytest unit tests, and lightweight CI are in place.
 
 The current interface is a CLI. FastAPI serving, Docker packaging, and VPS deployment remain roadmap items.
 
@@ -136,6 +137,28 @@ GitHub Actions runs lightweight checks on pushes and pull requests to `main`:
 - pytest unit tests
 
 CI intentionally does not run the LangGraph agent or RAGAS scoring yet, because those require API keys plus the local corpus/index.
+
+## Observability
+
+LangSmith tracing is optional. LangChain/LangGraph read tracing configuration from environment variables; this project also loads the same keys from `.env` and applies them before agent/generation runs.
+
+To enable tracing:
+
+```bash
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_langsmith_key
+LANGSMITH_PROJECT=finance-query-engine-dev
+```
+
+Optional settings:
+
+```bash
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_WORKSPACE_ID=your_workspace_id
+LANGCHAIN_CALLBACKS_BACKGROUND=false
+```
+
+Agent traces are tagged with `finance-query-engine` and include corpus metadata. Tracing can capture prompts, retrieved chunks, model responses, and metadata, so only enable it for data you are comfortable sending to LangSmith. CI does not require LangSmith secrets.
 
 ## Setup
 

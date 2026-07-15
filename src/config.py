@@ -21,8 +21,18 @@ class Settings(BaseSettings):
     data_raw_dir: Path = Path("data/raw")
     data_processed_dir: Path = Path("data/processed")
     chroma_persist_dir: Path | None = None
+    langsmith_tracing: bool | None = None
+    langsmith_api_key: SecretStr | None = None
+    langsmith_project: str | None = None
+    langsmith_endpoint: str | None = None
+    langsmith_workspace_id: str | None = None
+    langchain_callbacks_background: bool | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     @model_validator(mode="after")
     def set_chroma_persist_dir(self) -> Self:
