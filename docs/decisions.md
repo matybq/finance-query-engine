@@ -306,3 +306,15 @@
 - **Alternatives considered / rejected:**
   - **Static direct response:** cheaper and deterministic, but less flexible and less polished for conversational UX.
   - **Allow direct factual answers:** rejected because it bypasses grounding.
+
+## ADR-029 — Agent trace streams over SSE from graph events
+
+- **Date:** 2026-07-16
+- **Status:** accepted
+- **Context:** The web UI should show the agent's decisions (routing, retrieval, grading, rewrites) and stream the answer while it generates, without changing the agent architecture.
+- **Decision:** Add `run_stream()` that maps LangGraph's native `updates`/`messages` stream modes to typed events (`route`, `retrieve`, `grade`, `rewrite`, `token`, `done`), served by `POST /ask/stream` as Server-Sent Events. `POST /ask` stays unchanged for the CLI and non-streaming clients.
+- **Rationale:** The graph state already records every decision with its reason, so the trace is a projection of existing state — no parallel bookkeeping. Node-level events arrive during the seconds the agent takes to run, which is when feedback matters; the refusal path becomes visible instead of implied. `X-Accel-Buffering: no` keeps nginx from buffering the stream, avoiding proxy configuration coupling.
+- **Alternatives considered / rejected:**
+  - **WebSockets:** bidirectional transport is unnecessary for a one-way event feed and complicates the nginx/Cloudflare path.
+  - **Polling a job endpoint:** simpler transport but adds server-side state and loses token-level streaming.
+  - **Returning the trace only in the final response:** loses the live feedback during the run, which is the main UX value.

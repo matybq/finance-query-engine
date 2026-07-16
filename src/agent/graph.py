@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Literal, NotRequired, TypedDict
 
@@ -36,6 +37,10 @@ Route = Literal["retrieve", "direct", "out_of_scope"]
 GradeRoute = Literal["generate", "rewrite", "insufficient_evidence"]
 Source = tuple[str, str]
 GradingAttempt = tuple[str, bool, str]
+AgentEvent = dict[str, object]
+
+_FINAL_NODES = {"generate", "direct", "out_of_scope", "insufficient_evidence"}
+_TOKEN_NODES = {"generate", "direct"}
 
 
 class AgentInput(TypedDict):
@@ -314,6 +319,70 @@ def build_graph():
 
 
 _GRAPH = build_graph()
+
+
+def _retrieve_event(update: dict) -> AgentEvent:
+    documents = update.get("documents", [])
+    attempts = update.get("retrieval_attempts", [])
+    return {
+        "type": "retrieve",
+        "query": attempts[-1][0] if attempts else "",
+        "count": len(documents),
+        "sections": [
+            {"source": source, "section": section} for source, section in generation.unique_sources(documents)
+        ],
+    }
+
+
+def run_stream(question: str) -> Iterator[AgentEvent]:
+    """Yield typed agent events while the graph executes, ending with a `done` event.
+
+    Node-level events (`route`, `retrieve`, `grade`, `rewrite`) surface the agent's
+    decisions as they happen; `token` events stream the answer text from the
+    generation and direct nodes.
+    """
+    configure_langsmith(get_settings())
+    route: Route | None = None
+    answer_text = ""
+    sources: list[Source] = []
+
+    for mode, payload in _GRAPH.stream(
+        {"question": question},
+        config=AGENT_RUN_CONFIG,
+        stream_mode=["updates", "messages"],
+    ):
+        if mode == "messages":
+            chunk, metadata = payload
+            content = chunk.content
+            if metadata.get("langgraph_node") in _TOKEN_NODES and isinstance(content, str) and content:
+                yield {"type": "token", "text": content}
+            continue
+
+        for node, update in payload.items():
+            if node == "router":
+                route = update["route"]
+                yield {"type": "route", "route": route, "reason": update.get("route_reason", "")}
+            elif node == "retrieve":
+                yield _retrieve_event(update)
+            elif node == "grade":
+                grading_attempts = update.get("grading_attempts", [])
+                yield {
+                    "type": "grade",
+                    "sufficient": bool(update.get("sufficient")),
+                    "reason": grading_attempts[-1][2] if grading_attempts else "",
+                }
+            elif node == "rewrite":
+                yield {"type": "rewrite", "query": update["search_query"]}
+            elif node in _FINAL_NODES:
+                answer_text = update.get("answer", "")
+                sources = update.get("sources", [])
+
+    yield {
+        "type": "done",
+        "answer": answer_text,
+        "sources": [{"source": source, "section": section} for source, section in sources],
+        "route": route,
+    }
 
 
 def run(question: str) -> AgentResult:

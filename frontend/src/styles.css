@@ -231,6 +231,85 @@ body {
   margin-top: 0.25rem;
 }
 
+/* ---- agent trace ---- */
+
+.trace {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  border-left: 1px solid var(--rule);
+}
+
+.trace li {
+  padding: 0.3rem 0 0.3rem 1rem;
+  position: relative;
+  animation: rise 0.35s ease-out both;
+}
+
+.trace li::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 0.85rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+.trace li.ok::before {
+  background: var(--ledger);
+}
+
+.trace li.warn::before {
+  background: var(--amber);
+}
+
+.trace-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.trace li.ok .trace-label {
+  color: var(--ledger);
+}
+
+.trace li.warn .trace-label {
+  color: var(--amber);
+}
+
+.trace-detail {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  margin-top: 0.1rem;
+}
+
+.waiting {
+  color: var(--ink-soft);
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--ledger);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s steps(2) infinite;
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
 .error {
   border-top-color: var(--oxblood);
 }

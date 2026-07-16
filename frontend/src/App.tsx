@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from "react";
-import { ask, type AskResponse, type Route } from "./api";
+import { askStream, type Route, type SourceRef, type TraceEvent } from "./api";
 
 const SAMPLE_QUESTIONS = [
   "What is AirCover for Hosts?",
   "How does Airbnb describe its competition?",
   "What drove revenue growth in fiscal 2025?",
+  "What was Tesla's revenue in 2025?",
 ];
 
 const ROUTE_LABELS: Record<Route, string> = {
@@ -13,28 +14,92 @@ const ROUTE_LABELS: Record<Route, string> = {
   out_of_scope: "out of scope",
 };
 
-type Result =
-  | { kind: "answer"; question: string; response: AskResponse }
-  | { kind: "error"; question: string; message: string };
+type Phase = "idle" | "running" | "done" | "error";
+
+interface TraceLine {
+  label: string;
+  detail: string;
+  tone?: "ok" | "warn";
+}
+
+function traceLine(step: TraceEvent): TraceLine {
+  switch (step.type) {
+    case "route":
+      return { label: `router → ${step.route}`, detail: step.reason };
+    case "retrieve":
+      return {
+        label: `retrieve → ${step.count} chunks`,
+        detail: [`“${step.query}”`, ...step.sections.map((ref) => ref.section)].join(" · "),
+      };
+    case "grade":
+      return {
+        label: `grade → ${step.sufficient ? "sufficient" : "insufficient"}`,
+        detail: step.reason,
+        tone: step.sufficient ? "ok" : "warn",
+      };
+    case "rewrite":
+      return { label: `rewrite → “${step.query}”`, detail: "" };
+  }
+}
 
 export function App() {
   const [question, setQuestion] = useState("");
-  const [pending, setPending] = useState<string | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [asked, setAsked] = useState("");
+  const [trace, setTrace] = useState<TraceEvent[]>([]);
+  const [route, setRoute] = useState<Route | null>(null);
+  const [streamed, setStreamed] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [sources, setSources] = useState<SourceRef[]>([]);
+  const [errorDetail, setErrorDetail] = useState("");
 
   async function submit(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || pending !== null) return;
-    setPending(trimmed);
-    setResult(null);
+    if (!trimmed || phase === "running") return;
+    setPhase("running");
+    setAsked(trimmed);
+    setTrace([]);
+    setRoute(null);
+    setStreamed("");
+    setAnswer("");
+    setSources([]);
+
+    let settled = false;
     try {
-      const response = await ask(trimmed);
-      setResult({ kind: "answer", question: trimmed, response });
+      await askStream(trimmed, (event) => {
+        switch (event.type) {
+          case "route":
+            setRoute(event.route);
+            setTrace((steps) => [...steps, event]);
+            break;
+          case "retrieve":
+          case "grade":
+          case "rewrite":
+            setTrace((steps) => [...steps, event]);
+            break;
+          case "token":
+            setStreamed((current) => current + event.text);
+            break;
+          case "done":
+            settled = true;
+            setRoute(event.route);
+            setAnswer(event.answer);
+            setSources(event.sources);
+            setPhase("done");
+            break;
+          case "error":
+            settled = true;
+            setErrorDetail(event.detail);
+            setPhase("error");
+            break;
+        }
+      });
+      if (!settled) throw new Error("The stream ended unexpectedly.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "The request failed.";
-      setResult({ kind: "error", question: trimmed, message });
-    } finally {
-      setPending(null);
+      if (!settled) {
+        setErrorDetail(error instanceof Error ? error.message : "The request failed.");
+        setPhase("error");
+      }
     }
   }
 
@@ -42,6 +107,8 @@ export function App() {
     event.preventDefault();
     void submit(question);
   }
+
+  const running = phase === "running";
 
   return (
     <div className="page">
@@ -55,7 +122,7 @@ export function App() {
         <p className="lede">
           Evidence-grounded answers over the <strong>Airbnb 10-K</strong> (fiscal year 2025,
           SEC&nbsp;EDGAR). When the filing doesn&rsquo;t support an answer, the agent refuses
-          instead of guessing.
+          instead of guessing &mdash; and you can watch it decide, step by step.
         </p>
       </header>
 
@@ -71,9 +138,9 @@ export function App() {
             onChange={(event) => setQuestion(event.target.value)}
             placeholder="e.g. What risks does Airbnb list around regulation?"
             autoComplete="off"
-            disabled={pending !== null}
+            disabled={running}
           />
-          <button type="submit" disabled={pending !== null || question.trim() === ""}>
+          <button type="submit" disabled={running || question.trim() === ""}>
             Ask
           </button>
         </div>
@@ -86,7 +153,7 @@ export function App() {
                   setQuestion(sample);
                   void submit(sample);
                 }}
-                disabled={pending !== null}
+                disabled={running}
               >
                 {sample}
               </button>
@@ -95,27 +162,45 @@ export function App() {
         </ul>
       </form>
 
-      {pending !== null && (
-        <section className="card pending" aria-live="polite">
-          <div className="progress" />
-          <p className="mono">Consulting the filing — retrieval, grading, generation…</p>
-        </section>
-      )}
+      {phase !== "idle" && (
+        <section className={phase === "error" ? "card error" : "card"} aria-live="polite">
+          {running && <div className="progress" />}
+          {route !== null && (
+            <div className="answer-meta">
+              <span className={`badge badge-${route}`}>{ROUTE_LABELS[route]}</span>
+            </div>
+          )}
+          <p className="asked">{asked}</p>
 
-      {result?.kind === "answer" && (
-        <section className="card answer" aria-live="polite">
-          <div className="answer-meta">
-            <span className={`badge badge-${result.response.route}`}>
-              {ROUTE_LABELS[result.response.route]}
-            </span>
-          </div>
-          <p className="asked">{result.question}</p>
-          <p className="answer-text">{result.response.answer}</p>
-          {result.response.sources.length > 0 && (
+          {trace.length > 0 && (
+            <ol className="trace">
+              {trace.map((step, index) => {
+                const line = traceLine(step);
+                return (
+                  <li key={index} className={line.tone}>
+                    <span className="trace-label">{line.label}</span>
+                    {line.detail && <span className="trace-detail">{line.detail}</span>}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+
+          {running && trace.length === 0 && <p className="mono waiting">routing the question…</p>}
+          {running && streamed !== "" && (
+            <p className="answer-text">
+              {streamed}
+              <span className="cursor" aria-hidden="true" />
+            </p>
+          )}
+          {phase === "done" && <p className="answer-text">{answer}</p>}
+          {phase === "error" && <p className="mono">{errorDetail}</p>}
+
+          {phase === "done" && sources.length > 0 && (
             <footer className="sources">
               <p className="overline">Sources</p>
               <ol>
-                {result.response.sources.map((ref, index) => (
+                {sources.map((ref, index) => (
                   <li key={`${ref.source}-${ref.section}-${index}`} className="mono">
                     {ref.source} · {ref.section}
                   </li>
@@ -123,13 +208,6 @@ export function App() {
               </ol>
             </footer>
           )}
-        </section>
-      )}
-
-      {result?.kind === "error" && (
-        <section className="card error" aria-live="polite">
-          <p className="asked">{result.question}</p>
-          <p className="mono">{result.message}</p>
         </section>
       )}
 

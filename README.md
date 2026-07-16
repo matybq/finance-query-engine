@@ -29,7 +29,7 @@ flowchart LR
 
 The first guardrail is structural: if retrieved evidence is still insufficient after the rewrite budget is exhausted (max 2 rewrites), the graph routes to `insufficient_evidence` instead of calling generation. Refusal is a graph edge, not a prompt instruction.
 
-Design docs live in [`docs/`](docs/): [architecture](docs/architecture.md), [ADR log](docs/decisions.md) (28 recorded decisions), and [phase status](docs/status.md).
+Design docs live in [`docs/`](docs/): [architecture](docs/architecture.md), [ADR log](docs/decisions.md) (29 recorded decisions), and [phase status](docs/status.md).
 
 ## Corpus
 
@@ -105,9 +105,11 @@ curl -X POST localhost:8000/ask \
 
 `POST /ask` returns the grounded answer, its source sections, and the agent route; `GET /health` is a liveness check. Interactive OpenAPI docs are served at `/docs`.
 
+`POST /ask/stream` serves the same contract as Server-Sent Events: typed `route` / `retrieve` / `grade` / `rewrite` events expose each agent decision with its reason as it happens, `token` events stream the answer text, and a final `done` event carries the full answer with sources ([ADR-029](docs/decisions.md)).
+
 ### Web UI
 
-A single-page React + TypeScript app (Vite, no UI framework) in [`frontend/`](frontend/) that calls `POST /api/ask` and renders the answer with its route badge and source sections.
+A single-page React + TypeScript app (Vite, no UI framework) in [`frontend/`](frontend/) that consumes `POST /api/ask/stream`: the agent's decisions render live as a trace timeline (routing with its reason, retrieved sections, grading verdict, query rewrites), and the answer streams in token by token with its route badge and source sections.
 
 ```bash
 cd frontend

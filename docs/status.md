@@ -11,7 +11,7 @@ Living document. Update at the end of every phase.
 - Functional agent evals: **11/11** across router, grounding, guardrail, factual, exact-term, and rewrite-loop families.
 - RAGAS (6 gold-answer cases): faithfulness **1.000**, context_recall **1.000**, factual_correctness **0.693** (F1 against reference wording; grounded-but-verbose answers score below exact-match phrasing).
 
-**Next:** Phase 5 polish — retrieval tuning informed by RAGAS. Custom domain + TLS shipped (finance.locus.com.ar via Cloudflare).
+**Next:** Phase 5 polish — retrieval tuning informed by RAGAS. Custom domain + TLS shipped (finance.locus.com.ar via Cloudflare). Agent trace streaming shipped: `POST /ask/stream` emits typed SSE events for every agent decision and streams answer tokens; the web UI renders them as a live trace timeline (ADR-029).
 
 **Cost / latency note:** agent questions typically take 2–4 LLM calls.
 
@@ -26,6 +26,7 @@ Living document. Update at the end of every phase.
 | Phase 4 | Grounding / guardrails / API / deploy (days 12–13) | ✅ complete |
 | Phase 5 | RAGAS evals + polish (day 14+) | first RAGAS suite done; tuning pending |
 | Phase 6 | Web UI + continuous deployment | ✅ complete |
+| Phase 7 | Agent trace streaming (SSE) | ✅ complete |
 
 ## Corpus
 

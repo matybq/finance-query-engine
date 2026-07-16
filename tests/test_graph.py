@@ -180,3 +180,52 @@ def test_graph_out_of_scope_skips_retrieval_end_to_end(monkeypatch) -> None:
     assert "can only answer questions about the indexed corpus" in final_state["answer"]
     assert final_state["sources"] == []
     assert final_state["retrieval_attempts"] == []
+
+
+def test_run_stream_emits_trace_events_and_done(monkeypatch) -> None:
+    decisions = {
+        RouteDecision: RouteDecision(route="retrieve", reason="Factual corpus question."),
+        GradeDecision: GradeDecision(sufficient=True, reason="Chunks answer the question."),
+    }
+    monkeypatch.setattr(graph, "_llm", lambda: FakeLLM(decisions))
+    monkeypatch.setattr(graph.hybrid, "retrieve", lambda query, k=4: [make_document("a")])
+    monkeypatch.setattr(
+        graph.generation,
+        "generate",
+        lambda question, documents: AnswerResult(
+            answer="Grounded answer.", sources=[("source.txt", "section")]
+        ),
+    )
+    monkeypatch.setattr(graph, "get_settings", lambda: None)
+    monkeypatch.setattr(graph, "configure_langsmith", lambda settings: None)
+
+    events = list(graph.run_stream("What is AirCover?"))
+
+    trace_types = [event["type"] for event in events if event["type"] != "token"]
+    assert trace_types == ["route", "retrieve", "grade", "done"]
+    route_event = events[0]
+    assert route_event["route"] == "retrieve"
+    assert route_event["reason"] == "Factual corpus question."
+    retrieve_event = next(event for event in events if event["type"] == "retrieve")
+    assert retrieve_event["count"] == 1
+    assert retrieve_event["sections"] == [{"source": "source.txt", "section": "section"}]
+    done_event = events[-1]
+    assert done_event["answer"] == "Grounded answer."
+    assert done_event["sources"] == [{"source": "source.txt", "section": "section"}]
+    assert done_event["route"] == "retrieve"
+
+
+def test_run_stream_out_of_scope_skips_retrieval(monkeypatch) -> None:
+    decisions = {
+        RouteDecision: RouteDecision(route="out_of_scope", reason="Different company."),
+    }
+    monkeypatch.setattr(graph, "_llm", lambda: FakeLLM(decisions))
+    monkeypatch.setattr(graph, "get_settings", lambda: None)
+    monkeypatch.setattr(graph, "configure_langsmith", lambda settings: None)
+
+    events = list(graph.run_stream("What is Tesla's revenue?"))
+
+    assert [event["type"] for event in events] == ["route", "done"]
+    assert events[0]["route"] == "out_of_scope"
+    assert "can only answer questions about the indexed corpus" in str(events[-1]["answer"])
+    assert events[-1]["sources"] == []
