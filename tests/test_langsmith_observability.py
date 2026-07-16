@@ -5,7 +5,9 @@ from src.observability.langsmith import configure_langsmith
 
 
 def make_settings(**overrides) -> Settings:
+    # _env_file=None keeps the developer's local .env from leaking into these tests.
     return Settings(
+        _env_file=None,
         openrouter_api_key=SecretStr("test-openrouter-key"),
         openai_api_key=SecretStr("test-openai-key"),
         **overrides,
