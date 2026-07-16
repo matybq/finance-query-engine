@@ -4,15 +4,13 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
-notebooks/.ipynb_checkpoints/
 
-data/raw/*
-!data/raw/.gitkeep
+# Raw corpus text is tracked (SEC filings are public domain); derived artifacts are not.
 data/processed/*
 !data/processed/.gitkeep
 
 evals/experiments/*
 !evals/experiments/.gitkeep
 
-# design docs kept local for now
-docs/
+# Spanish planning doc kept local as a historical artifact (see ADR-007)
+docs/PLAN_IMPLEMENTACION_AGENTE.md
