@@ -131,7 +131,7 @@ uv run python -m src.ingestion.ingest   # once, to build data/processed/
 docker compose up -d --build
 ```
 
-To deploy on a VPS: clone the repo, copy `.env` and `data/processed/` to the server (`rsync -az data/processed/ user@host:finance-query-engine/data/processed/`, owned by uid 1000 so the non-root container user can write Chroma's sqlite), then run the same `docker compose up -d --build`. The live deployment adds a `docker-compose.override.yml` that binds the API to loopback only and an nginx reverse proxy exposing it under `/api/` (with `--root-path /api` so the OpenAPI docs work behind the prefix). The web UI deploys as static files: build it locally (`npm run build`), copy `frontend/dist/` to the server, and serve it from nginx's root `location /` alongside the `/api/` proxy.
+To deploy on a VPS: clone the repo, copy `.env` and `data/processed/` to the server (`rsync -az data/processed/ user@host:finance-query-engine/data/processed/`, owned by uid 1000 so the non-root container user can write Chroma's sqlite), then run the same `docker compose up -d --build`. The live deployment adds a `docker-compose.override.yml` that binds the API to loopback only and an nginx reverse proxy exposing it under `/api/` (with `--root-path /api` so the OpenAPI docs work behind the prefix). The web UI deploys continuously: on every push to `main`, a [GitHub Actions workflow](.github/workflows/deploy.yml) builds the bundle and rsyncs it (as a dedicated `deploy` user that owns only the static root) to the VPS, where nginx serves it at `/` alongside the `/api/` proxy. The server block and the one-time VPS setup script live in [`deploy/`](deploy/).
 
 ## Evaluation
 
