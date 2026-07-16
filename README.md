@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml)
 
+**Live demo:** http://187.127.9.91/api/docs — interactive Swagger UI over the deployed agent (try `POST /ask` with `"What is AirCover for Hosts?"`).
+
 Dense financial filings are hard to query reliably: generic LLM answers tend to blur missing evidence, misread figures, or hallucinate when the filing is ambiguous. This project is a grounded agentic RAG system for asking natural-language questions over financial filings, with a refusal-over-hallucination stance: answers must cite source evidence, and when evidence is weak the system should say so explicitly instead of pretending certainty.
 
 ## Architecture
@@ -61,13 +63,13 @@ Implemented:
 
 Roadmap:
 
-- VPS deployment with a public demo endpoint
+- custom domain + TLS for the demo endpoint
 
 ## Status
 
 **Core is functional end-to-end**: agentic routing + self-correcting retrieval power generation, guarded by a structural insufficient-evidence refusal. Deterministic functional evals, a report-only RAGAS suite, optional LangSmith tracing, unit tests (agent graph, retrieval fusion, API), and CI with lint + type checks are in place.
 
-The system is served through a CLI and a minimal FastAPI app, packaged with Docker. VPS deployment with a public demo endpoint is the remaining roadmap item.
+The system is served through a CLI and a minimal FastAPI app, packaged with Docker and deployed on a VPS behind nginx — the [live demo](http://187.127.9.91/api/docs) runs the same image built from this repo.
 
 ## Key engineering decisions
 
@@ -115,7 +117,7 @@ uv run python -m src.ingestion.ingest   # once, to build data/processed/
 docker compose up -d --build
 ```
 
-To deploy on a VPS: clone the repo, copy `.env` and `data/processed/` to the server (`rsync -r data/processed/ user@host:finance-query-engine/data/processed/`), then run the same `docker compose up -d --build`.
+To deploy on a VPS: clone the repo, copy `.env` and `data/processed/` to the server (`rsync -az data/processed/ user@host:finance-query-engine/data/processed/`, owned by uid 1000 so the non-root container user can write Chroma's sqlite), then run the same `docker compose up -d --build`. The live deployment adds a `docker-compose.override.yml` that binds the API to loopback only and an nginx reverse proxy exposing it under `/api/` (with `--root-path /api` so the OpenAPI docs work behind the prefix).
 
 ## Evaluation
 
