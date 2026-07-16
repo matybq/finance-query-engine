@@ -11,7 +11,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.config import COLLECTION_NAME, get_settings
 
-
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
 

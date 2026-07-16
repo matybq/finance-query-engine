@@ -9,7 +9,6 @@ from rank_bm25 import BM25Okapi
 
 from src.config import get_settings
 
-
 # Keep financial/reporting terms like "10-K", "12.5", and "year-over-year"
 # as single tokens instead of splitting them on punctuation.
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+(?:[.-][a-z0-9]+)*")
@@ -27,6 +26,7 @@ def top_positive_score_indices(scores, k: int) -> list[int]:
         key=lambda index: scores[index],
         reverse=True,
     )[:k]
+
 
 # This cache is process-lifetime; services that re-ingest must call
 # load_sparse_index.cache_clear() so BM25 does not serve stale chunks.

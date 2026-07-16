@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, NotRequired, TypeVar, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableConfig
@@ -16,10 +16,10 @@ from src.generation.llm import build_llm
 from src.observability.langsmith import configure_langsmith
 from src.retrieval import hybrid
 
-
 MAX_REWRITES = 2
-# The agent retrieves deeper than the plain-RAG baseline (k=4) because measured fused ranks put answering chunks at 5–7 after query rewriting.
-# The Fase 2 k=4 hallucination risk is handled structurally here by the router: out-of-scope questions never reach retrieval.
+# The agent retrieves deeper than the plain-RAG baseline (k=4) because measured fused
+# ranks put answering chunks at 5-7 after query rewriting. The k=4 hallucination risk is
+# handled structurally here by the router: out-of-scope questions never reach retrieval.
 RETRIEVE_K = 6
 INSUFFICIENT_EVIDENCE_ANSWER = (
     "I do not know based on the retrieved context. "
@@ -36,7 +36,6 @@ Route = Literal["retrieve", "direct", "out_of_scope"]
 GradeRoute = Literal["generate", "rewrite", "insufficient_evidence"]
 Source = tuple[str, str]
 GradingAttempt = tuple[str, bool, str]
-StructuredOutput = TypeVar("StructuredOutput", bound=BaseModel)
 
 
 class AgentInput(TypedDict):
@@ -52,9 +51,9 @@ class AgentState(TypedDict):
     rewrite_count: int  # the number of times the question has been rewritten
     route: Route  # the next route for the user's question
     route_reason: NotRequired[str]  # why the router chose the route
-    sufficient: NotRequired[bool]  # whether the retrieved documents contain enough information to answer the original question
+    sufficient: NotRequired[bool]  # whether the documents can answer the original question
     rewritten_queries: NotRequired[list[str]]  # the rewritten queries used to retrieve documents
-    retrieval_attempts: NotRequired[list[tuple[str, list[str]]]]  # the retrieval attempts and their results
+    retrieval_attempts: NotRequired[list[tuple[str, list[str]]]]  # retrieval attempts and their results
     grading_attempts: NotRequired[list[GradingAttempt]]  # the grading decisions for each retrieval attempt
 
 
@@ -87,7 +86,7 @@ class AgentResult:
     retrieved_chunk_ids: list[str]
 
 
-def _parse_structured_output(
+def _parse_structured_output[StructuredOutput: BaseModel](
     model: type[StructuredOutput],
     value: object,
 ) -> StructuredOutput:
@@ -124,12 +123,12 @@ def router_node(state: AgentState) -> dict:
                     "Set the `route` field for a corpus-grounded finance assistant and set `reason` "
                     "to a brief explanation. Use direct ONLY for meta/help/greetings about the assistant "
                     "itself, such as 'hello' or 'what can you do?'. NEVER use direct for factual questions. "
-                    "Use retrieve for factual questions about Airbnb or the indexed Airbnb 10-K FY2025 corpus. "
-                    "The corpus is the Airbnb 10-K FY2025; questions may reference products, programs, "
-                    "metrics, or terms from those documents without naming the company, and those questions "
-                    "must route to retrieve. Do not require the question to include Airbnb or 10-K when it "
-                    "asks what a named item is; named items may be corpus products, programs, metrics, or terms. "
-                    "Use out_of_scope ONLY when the question is clearly about a "
+                    "Use retrieve for factual questions about Airbnb or the indexed Airbnb 10-K FY2025 "
+                    "corpus. The corpus is the Airbnb 10-K FY2025; questions may reference products, "
+                    "programs, metrics, or terms from those documents without naming the company, and those "
+                    "questions must route to retrieve. Do not require the question to include Airbnb or "
+                    "10-K when it asks what a named item is; named items may be corpus products, programs, "
+                    "metrics, or terms. Use out_of_scope ONLY when the question is clearly about a "
                     "different company or a topic unrelated to the indexed documents. When uncertain between "
                     "retrieve and out_of_scope, choose retrieve; downstream grading and grounding handle "
                     "irrelevant results.",
@@ -148,8 +147,7 @@ def route_after_router(state: AgentState) -> Route:
 def out_of_scope_node(state: AgentState) -> dict:
     return {
         "answer": (
-            "I can only answer questions about the indexed corpus: Airbnb 10-K FY2025, "
-            "Items 1, 1A, and 7."
+            "I can only answer questions about the indexed corpus: Airbnb 10-K FY2025, Items 1, 1A, and 7."
         ),
         "sources": [],
     }
@@ -180,9 +178,7 @@ def retrieve_node(state: AgentState) -> dict:
 
 
 def _format_grade_context(documents: list[Document]) -> str:
-    return "\n\n".join(
-        f"Chunk {index}: {doc.page_content}" for index, doc in enumerate(documents, start=1)
-    )
+    return "\n\n".join(f"Chunk {index}: {doc.page_content}" for index, doc in enumerate(documents, start=1))
 
 
 def _format_grading_feedback(grading_attempts: list[GradingAttempt]) -> str:
@@ -214,14 +210,15 @@ def grade_node(state: AgentState) -> dict:
             [
                 (
                     "system",
-                    "Set the `sufficient` field to indicate whether the retrieved chunks contain enough information "
-                    "to answer the original question, and set `reason` to a brief explanation. Judge against "
-                    "the original question, not the retrieval query. Use sufficient=true only when the chunks "
-                    "include the specific facts needed for a grounded answer.",
+                    "Set the `sufficient` field to indicate whether the retrieved chunks contain enough "
+                    "information to answer the original question, and set `reason` to a brief explanation. "
+                    "Judge against the original question, not the retrieval query. Use sufficient=true only "
+                    "when the chunks include the specific facts needed for a grounded answer.",
                 ),
                 (
                     "human",
-                    f"Original question: {state['question']}\n\nRetrieved chunks:\n{_format_grade_context(state['documents'])}",
+                    f"Original question: {state['question']}\n\n"
+                    f"Retrieved chunks:\n{_format_grade_context(state['documents'])}",
                 ),
             ]
         ),

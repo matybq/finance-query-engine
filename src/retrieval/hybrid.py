@@ -6,7 +6,6 @@ from langchain_core.documents import Document
 
 from src.retrieval import dense, sparse
 
-
 RRF_K = 60  # Reciprocal Rank Fusion smoothing factor
 
 DENSE_CANDIDATES = 20

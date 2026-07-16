@@ -7,7 +7,6 @@ from typing import Literal, Self
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 COLLECTION_NAME = "airbnb_10k_fy2025"
 
 

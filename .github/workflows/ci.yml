@@ -28,8 +28,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --extra eval --group dev
 
-      - name: Compile Python sources
-        run: uv run --locked --extra eval --group dev python -m compileall -q src evals tests
+      - name: Lint
+        run: uv run --locked --extra eval --group dev ruff check src evals tests
+
+      - name: Check formatting
+        run: uv run --locked --extra eval --group dev ruff format --check src evals tests
+
+      - name: Type-check
+        run: uv run --locked --extra eval --group dev mypy
 
       - name: Smoke-test RAGAS imports
         run: uv run --locked --extra eval --group dev python -c "from evals.evaluate_ragas import import_ragas; import_ragas(); print('ragas imports ok')"

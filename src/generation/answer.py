@@ -27,7 +27,8 @@ GENERATION_RUN_CONFIG: RunnableConfig = {
 def format_context(documents: list[Document]) -> str:
     """Format retrieved chunks as source-labeled context for the LLM."""
     return "\n\n".join(
-        f"Source: {doc.metadata.get('source', 'unknown')} ({doc.metadata.get('section', 'unknown')})\n{doc.page_content}"
+        f"Source: {doc.metadata.get('source', 'unknown')} "
+        f"({doc.metadata.get('section', 'unknown')})\n{doc.page_content}"
         for doc in documents
     )
 
