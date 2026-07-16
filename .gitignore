@@ -12,5 +12,8 @@ data/processed/*
 evals/experiments/*
 !evals/experiments/.gitkeep
 
+frontend/node_modules/
+frontend/dist/
+
 # Spanish planning doc kept local as a historical artifact (see ADR-007)
 docs/PLAN_IMPLEMENTACION_AGENTE.md

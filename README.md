@@ -49,6 +49,7 @@ Implemented:
 
 - LangGraph for orchestration
 - FastAPI for serving
+- Vite + React + TypeScript for the web UI
 - Docker + docker compose for packaging
 - OpenRouter for LLM access
 - OpenAI `text-embedding-3-small` for embeddings
@@ -69,7 +70,7 @@ Roadmap:
 
 **Core is functional end-to-end**: agentic routing + self-correcting retrieval power generation, guarded by a structural insufficient-evidence refusal. Deterministic functional evals, a report-only RAGAS suite, optional LangSmith tracing, unit tests (agent graph, retrieval fusion, API), and CI with lint + type checks are in place.
 
-The system is served through a CLI and a minimal FastAPI app, packaged with Docker and deployed on a VPS behind nginx — the [live demo](http://187.127.9.91/api/docs) runs the same image built from this repo.
+The system is served through a CLI, a minimal FastAPI app, and a small React web UI, packaged with Docker and deployed on a VPS behind nginx — the [live demo](http://187.127.9.91/api/docs) runs the same image built from this repo.
 
 ## Key engineering decisions
 
@@ -108,6 +109,19 @@ curl -X POST localhost:8000/ask \
 
 `POST /ask` returns the grounded answer, its source sections, and the agent route; `GET /health` is a liveness check. Interactive OpenAPI docs are served at `/docs`.
 
+### Web UI
+
+A single-page React + TypeScript app (Vite, no UI framework) in [`frontend/`](frontend/) that calls `POST /api/ask` and renders the answer with its route badge and source sections.
+
+```bash
+cd frontend
+npm install
+npm run dev        # proxies /api/* to a local API on :8000
+npm run build      # static bundle in frontend/dist/
+```
+
+Set `API_PROXY_TARGET=http://187.127.9.91` to point the dev proxy at the live demo instead of a local API.
+
 ### Docker
 
 The image packages the API only; the prebuilt index is mounted as a volume and API keys are provided at runtime via `.env`, so neither corpus data nor secrets are baked into the image. The mount is writable because Chroma's sqlite needs write access (WAL/journal) even to serve reads.
@@ -117,7 +131,7 @@ uv run python -m src.ingestion.ingest   # once, to build data/processed/
 docker compose up -d --build
 ```
 
-To deploy on a VPS: clone the repo, copy `.env` and `data/processed/` to the server (`rsync -az data/processed/ user@host:finance-query-engine/data/processed/`, owned by uid 1000 so the non-root container user can write Chroma's sqlite), then run the same `docker compose up -d --build`. The live deployment adds a `docker-compose.override.yml` that binds the API to loopback only and an nginx reverse proxy exposing it under `/api/` (with `--root-path /api` so the OpenAPI docs work behind the prefix).
+To deploy on a VPS: clone the repo, copy `.env` and `data/processed/` to the server (`rsync -az data/processed/ user@host:finance-query-engine/data/processed/`, owned by uid 1000 so the non-root container user can write Chroma's sqlite), then run the same `docker compose up -d --build`. The live deployment adds a `docker-compose.override.yml` that binds the API to loopback only and an nginx reverse proxy exposing it under `/api/` (with `--root-path /api` so the OpenAPI docs work behind the prefix). The web UI deploys as static files: build it locally (`npm run build`), copy `frontend/dist/` to the server, and serve it from nginx's root `location /` alongside the `/api/` proxy.
 
 ## Evaluation
 
