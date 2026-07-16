@@ -1,7 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "finance-query-engine"
 version = "0.1.0"
 description = "Agentic RAG system for financial document question answering."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "matybq" }]
 requires-python = ">=3.12"
 dependencies = [
     "pydantic-settings>=2.0",
@@ -10,7 +18,12 @@ dependencies = [
     "langchain-chroma>=0.2",
     "langchain-text-splitters>=0.3",
     "rank-bm25>=0.2.2",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
 ]
+
+[project.scripts]
+finance-ask = "src.ask:main"
 
 [project.optional-dependencies]
 eval = [
@@ -22,4 +35,39 @@ eval = [
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "httpx>=0.28",
+    "ruff>=0.9",
+    "mypy>=1.14",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+# Section labels intentionally use the en dash from the filing ("Item 1 – Business").
+allowed-confusables = ["–"]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # import sorting
+    "UP",  # pyupgrade
+    "B",   # bugbear
+    "SIM", # simplify
+    "RUF", # ruff-specific
+]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["rank_bm25"]
+ignore_missing_imports = true

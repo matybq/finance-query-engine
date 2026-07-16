@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
-sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from src.agent.graph import AgentResult, run
 from src.config import get_settings
@@ -41,8 +38,7 @@ def import_ragas():
         from ragas.metrics import FactualCorrectness, Faithfulness, LLMContextRecall
     except ModuleNotFoundError as exc:
         raise SystemExit(
-            "RAGAS evaluation dependencies are missing. Install them with: "
-            "uv sync --extra eval"
+            "RAGAS evaluation dependencies are missing. Install them with: uv sync --extra eval"
         ) from exc
 
     return {
@@ -65,9 +61,7 @@ def load_cases(path: Path, limit: int | None = None) -> list[dict[str, Any]]:
             case = json.loads(line)
             missing_fields = {"id", "question", "reference"} - set(case)
             if missing_fields:
-                raise ValueError(
-                    f"{path}:{line_number} missing required fields: {sorted(missing_fields)}"
-                )
+                raise ValueError(f"{path}:{line_number} missing required fields: {sorted(missing_fields)}")
 
             cases.append(case)
             if limit is not None and len(cases) >= limit:

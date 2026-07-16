@@ -33,8 +33,8 @@ def print_welcome() -> None:
     print(f"\n{APP_NAME}")
     print("Grounded financial Q&A over the indexed corpus.")
     print("\nUsage")
-    print('  ./finance-ask "What are Airbnb\'s main risk factors?"')
-    print('  ./finance-ask --debug "How does Airbnb make money?"')
+    print('  uv run finance-ask "What are Airbnb\'s main risk factors?"')
+    print('  uv run finance-ask --debug "How does Airbnb make money?"')
     print("\nInteractive mode")
     print("  Type a question and press Enter.")
     print("  Type 'exit', 'quit', or 'q' to close the session.")
@@ -102,7 +102,7 @@ def run_interactive(debug: bool = False) -> None:
 
         try:
             ask_once(question, debug=debug)
-        except Exception as error:  # noqa: BLE001 - keep interactive sessions alive.
+        except Exception as error:
             print(
                 f"Error: the agent failed to process the question ({error.__class__.__name__}). Try again.",
                 file=sys.stderr,

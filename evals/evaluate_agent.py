@@ -3,15 +3,11 @@
 from __future__ import annotations
 
 import json
-import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
 from src.agent.graph import AgentResult, run
-
 
 CASES_PATH = Path(__file__).with_name("agent_cases.jsonl")
 REFUSAL_MARKERS = (
@@ -62,22 +58,15 @@ def check_expectations(case: dict[str, Any], result: AgentResult) -> list[str]:
 
     for text in expected.get("must_contain", []):
         if text.lower() not in lower_answer:
-            failures.append(
-                f"must_contain expected={text!r} actual_answer={truncate(answer)!r}"
-            )
+            failures.append(f"must_contain expected={text!r} actual_answer={truncate(answer)!r}")
 
     any_terms = expected.get("must_contain_any", [])
     if any_terms and not any(text.lower() in lower_answer for text in any_terms):
-        failures.append(
-            "must_contain_any expected_one_of="
-            f"{any_terms!r} actual_answer={truncate(answer)!r}"
-        )
+        failures.append(f"must_contain_any expected_one_of={any_terms!r} actual_answer={truncate(answer)!r}")
 
     for text in expected.get("must_not_contain", []):
         if text.lower() in lower_answer:
-            failures.append(
-                f"must_not_contain expected_absent={text!r} actual_answer={truncate(answer)!r}"
-            )
+            failures.append(f"must_not_contain expected_absent={text!r} actual_answer={truncate(answer)!r}")
 
     if "refusal" in expected:
         actual = has_refusal(answer)
@@ -90,9 +79,7 @@ def check_expectations(case: dict[str, Any], result: AgentResult) -> list[str]:
     if "has_sources" in expected:
         actual = bool(result.sources)
         if actual is not expected["has_sources"]:
-            failures.append(
-                f"has_sources expected={expected['has_sources']!r} actual={actual!r}"
-            )
+            failures.append(f"has_sources expected={expected['has_sources']!r} actual={actual!r}")
 
     return failures
 
@@ -101,7 +88,7 @@ def evaluate_case(case: dict[str, Any]) -> tuple[bool, list[str], AgentResult | 
     try:
         result = run(case["question"])
         failures = check_expectations(case, result)
-    except Exception as exc:  # noqa: BLE001 - crashes are reported per case.
+    except Exception as exc:
         return False, [f"exception expected=none actual={type(exc).__name__}: {exc}"], None
 
     return not failures, failures, result
