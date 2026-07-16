@@ -18,6 +18,14 @@ scp deploy/nginx.conf "root@$HOST:/tmp/fqe-nginx.conf"
 
 ssh "root@$HOST" "PUBKEY='$(cat "$KEY.pub")' bash -s" <<'EOF'
 set -euo pipefail
+
+# The nginx server block references the Cloudflare Origin CA certificate;
+# installing the config without it would fail nginx -t.
+if [ ! -f /etc/ssl/cloudflare/locus.com.ar.pem ] || [ ! -f /etc/ssl/cloudflare/locus.com.ar.key ]; then
+  echo "ABORT: install the Cloudflare origin cert first:" >&2
+  echo "  /etc/ssl/cloudflare/locus.com.ar.pem and .key" >&2
+  exit 1
+fi
 id -u deploy >/dev/null 2>&1 || useradd -m -s /bin/sh deploy
 install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
 grep -qF "$PUBKEY" /home/deploy/.ssh/authorized_keys 2>/dev/null \
