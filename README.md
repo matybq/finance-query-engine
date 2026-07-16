@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml) [![Deploy](https://github.com/matybq/finance-query-engine/actions/workflows/deploy.yml/badge.svg)](https://github.com/matybq/finance-query-engine/actions/workflows/deploy.yml)
 
-**Live demo:** http://187.127.9.91/ — ask the deployed agent from the web UI (try *"What is AirCover for Hosts?"*). Interactive Swagger UI at [/api/docs](http://187.127.9.91/api/docs).
+**Live demo:** https://finance.locus.com.ar — ask the deployed agent from the web UI (try *"What is AirCover for Hosts?"*). Interactive Swagger UI at [/api/docs](https://finance.locus.com.ar/api/docs).
 
 Dense financial filings are hard to query reliably: generic LLM answers tend to blur missing evidence, misread figures, or hallucinate when the filing is ambiguous. This project is a grounded agentic RAG system for asking natural-language questions over financial filings, with a refusal-over-hallucination stance: answers must cite source evidence, and when evidence is weak the system should say so explicitly instead of pretending certainty.
 
@@ -62,15 +62,11 @@ Implemented:
 - ruff + mypy + GitHub Actions for CI
 - uv for Python environment management
 
-Roadmap:
-
-- custom domain + TLS for the demo endpoint
-
 ## Status
 
 **The full cycle is complete** — from ingestion to a continuously deployed product: agentic routing + self-correcting retrieval power generation, guarded by a structural insufficient-evidence refusal. Deterministic functional evals, a report-only RAGAS suite, optional LangSmith tracing, unit tests (agent graph, retrieval fusion, API), and CI covering both the Python backend and the frontend build are in place.
 
-The system is served through a CLI, a FastAPI app, and a React web UI, packaged with Docker and deployed on a VPS behind nginx. The [live demo](http://187.127.9.91/) runs the same code as this repo: the API image is built from it, and the web UI redeploys automatically on every push to `main`.
+The system is served through a CLI, a FastAPI app, and a React web UI, packaged with Docker and deployed on a VPS behind nginx and Cloudflare (TLS at the edge, Origin CA cert at the origin). The [live demo](https://finance.locus.com.ar) runs the same code as this repo: the API image is built from it, and the web UI redeploys automatically on every push to `main`.
 
 ## Key engineering decisions
 
@@ -120,7 +116,7 @@ npm run dev        # proxies /api/* to a local API on :8000
 npm run build      # static bundle in frontend/dist/
 ```
 
-Set `API_PROXY_TARGET=http://187.127.9.91` to point the dev proxy at the live demo instead of a local API.
+Set `API_PROXY_TARGET=https://finance.locus.com.ar` to point the dev proxy at the live demo instead of a local API.
 
 ### Docker
 

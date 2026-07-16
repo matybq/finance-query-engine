@@ -4,14 +4,14 @@ Living document. Update at the end of every phase.
 
 ## Current phase
 
-**The full cycle is complete as of 2026-07-16**: the structural guardrail, deterministic functional evals, the RAGAS report-only suite, LangSmith tracing, a minimal FastAPI serving layer (`POST /ask`, `GET /health`), Docker + docker compose packaging, and VPS deployment are in place — now fronted by a React + TypeScript web UI with continuous deployment (GitHub Actions builds the bundle and rsyncs it to the VPS on every push to `main`). The live demo runs at http://187.127.9.91/ behind nginx: the UI at the site root, the loopback-bound API proxied under `/api/`.
+**The full cycle is complete as of 2026-07-16**: the structural guardrail, deterministic functional evals, the RAGAS report-only suite, LangSmith tracing, a minimal FastAPI serving layer (`POST /ask`, `GET /health`), Docker + docker compose packaging, and VPS deployment are in place — now fronted by a React + TypeScript web UI with continuous deployment (GitHub Actions builds the bundle and rsyncs it to the VPS on every push to `main`). The live demo runs at https://finance.locus.com.ar behind Cloudflare (TLS at the edge, Origin CA cert at the origin) and nginx: the UI at the site root, the loopback-bound API proxied under `/api/`.
 
 **Current eval results (2026-07-15, `gpt-4o-mini`):**
 
 - Functional agent evals: **11/11** across router, grounding, guardrail, factual, exact-term, and rewrite-loop families.
 - RAGAS (6 gold-answer cases): faithfulness **1.000**, context_recall **1.000**, factual_correctness **0.693** (F1 against reference wording; grounded-but-verbose answers score below exact-match phrasing).
 
-**Next:** Phase 5 polish — retrieval tuning informed by RAGAS, plus a custom domain + TLS for the demo.
+**Next:** Phase 5 polish — retrieval tuning informed by RAGAS. Custom domain + TLS shipped (finance.locus.com.ar via Cloudflare).
 
 **Cost / latency note:** agent questions typically take 2–4 LLM calls.
 
