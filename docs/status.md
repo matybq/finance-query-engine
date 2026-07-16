@@ -4,14 +4,14 @@ Living document. Update at the end of every phase.
 
 ## Current phase
 
-**Phase 4 is complete as of 2026-07-16**: the structural guardrail, deterministic functional evals, the RAGAS report-only suite, LangSmith tracing, a minimal FastAPI serving layer (`POST /ask`, `GET /health`), Docker + docker compose packaging, and VPS deployment are in place. The live demo runs at http://187.127.9.91/api/docs behind nginx, with the API bound to loopback and proxied under `/api/`.
+**The full cycle is complete as of 2026-07-16**: the structural guardrail, deterministic functional evals, the RAGAS report-only suite, LangSmith tracing, a minimal FastAPI serving layer (`POST /ask`, `GET /health`), Docker + docker compose packaging, and VPS deployment are in place — now fronted by a React + TypeScript web UI with continuous deployment (GitHub Actions builds the bundle and rsyncs it to the VPS on every push to `main`). The live demo runs at http://187.127.9.91/ behind nginx: the UI at the site root, the loopback-bound API proxied under `/api/`.
 
 **Current eval results (2026-07-15, `gpt-4o-mini`):**
 
 - Functional agent evals: **11/11** across router, grounding, guardrail, factual, exact-term, and rewrite-loop families.
 - RAGAS (6 gold-answer cases): faithfulness **1.000**, context_recall **1.000**, factual_correctness **0.693** (F1 against reference wording; grounded-but-verbose answers score below exact-match phrasing).
 
-**Next:** Phase 5 polish — retrieval tuning informed by RAGAS, plus a custom domain + TLS for the demo endpoint.
+**Next:** Phase 5 polish — retrieval tuning informed by RAGAS, plus a custom domain + TLS for the demo.
 
 **Cost / latency note:** agent questions typically take 2–4 LLM calls.
 
@@ -25,6 +25,7 @@ Living document. Update at the end of every phase.
 | Phase 3 | LangGraph agent (days 9–11) | ✅ complete |
 | Phase 4 | Grounding / guardrails / API / deploy (days 12–13) | ✅ complete |
 | Phase 5 | RAGAS evals + polish (day 14+) | first RAGAS suite done; tuning pending |
+| Phase 6 | Web UI + continuous deployment | ✅ complete |
 
 ## Corpus
 
@@ -33,7 +34,8 @@ Living document. Update at the end of every phase.
 
 ## Engineering quality
 
-- CI: ruff (lint + format), mypy, pytest on every push/PR to `main`.
+- CI: ruff (lint + format), mypy, pytest, and a frontend type-check + build on every push/PR to `main`.
+- CD: on every push to `main`, GitHub Actions builds the web UI and deploys it to the VPS (see `deploy/` for the nginx server block and setup script).
 - Unit tests cover retrieval fusion, generation helpers, the agent graph (with fake LLMs), and the API (with a mocked agent).
 - The project is an installable package with a `finance-ask` entry point.
 
@@ -43,5 +45,4 @@ Living document. Update at the end of every phase.
 - LangSmith eval harness
 - Query transformation
 - Open-source models
-- UI
 - GraphRAG

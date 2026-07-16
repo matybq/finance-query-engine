@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml)
 
-**Live demo:** http://187.127.9.91/api/docs — interactive Swagger UI over the deployed agent (try `POST /ask` with `"What is AirCover for Hosts?"`).
+**Live demo:** http://187.127.9.91/ — ask the deployed agent from the web UI (try *"What is AirCover for Hosts?"*). Interactive Swagger UI at [/api/docs](http://187.127.9.91/api/docs).
 
 Dense financial filings are hard to query reliably: generic LLM answers tend to blur missing evidence, misread figures, or hallucinate when the filing is ambiguous. This project is a grounded agentic RAG system for asking natural-language questions over financial filings, with a refusal-over-hallucination stance: answers must cite source evidence, and when evidence is weak the system should say so explicitly instead of pretending certainty.
 
@@ -68,9 +68,9 @@ Roadmap:
 
 ## Status
 
-**Core is functional end-to-end**: agentic routing + self-correcting retrieval power generation, guarded by a structural insufficient-evidence refusal. Deterministic functional evals, a report-only RAGAS suite, optional LangSmith tracing, unit tests (agent graph, retrieval fusion, API), and CI with lint + type checks are in place.
+**The full cycle is complete** — from ingestion to a continuously deployed product: agentic routing + self-correcting retrieval power generation, guarded by a structural insufficient-evidence refusal. Deterministic functional evals, a report-only RAGAS suite, optional LangSmith tracing, unit tests (agent graph, retrieval fusion, API), and CI covering both the Python backend and the frontend build are in place.
 
-The system is served through a CLI, a minimal FastAPI app, and a small React web UI, packaged with Docker and deployed on a VPS behind nginx — the [live demo](http://187.127.9.91/api/docs) runs the same image built from this repo.
+The system is served through a CLI, a FastAPI app, and a React web UI, packaged with Docker and deployed on a VPS behind nginx. The [live demo](http://187.127.9.91/) runs the same code as this repo: the API image is built from it, and the web UI redeploys automatically on every push to `main`.
 
 ## Key engineering decisions
 
@@ -207,8 +207,13 @@ GitHub Actions runs on pushes and pull requests to `main`:
 - mypy type check
 - RAGAS import smoke test
 - pytest unit tests
+- frontend type-check + build
 
 CI intentionally does not run the LangGraph agent or RAGAS scoring, because those require API keys plus the local index; they run locally against every meaningful change and their latest results are recorded above.
+
+### CD
+
+A separate [Deploy workflow](.github/workflows/deploy.yml) runs on every push to `main`: it builds the web UI and rsyncs the bundle to the VPS as a dedicated `deploy` user, so the live demo tracks `main` with no manual steps.
 
 ## Observability
 
