@@ -1,6 +1,6 @@
 # finance-query-engine
 
-[![CI](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml)
+[![CI](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/matybq/finance-query-engine/actions/workflows/ci.yml) [![Deploy](https://github.com/matybq/finance-query-engine/actions/workflows/deploy.yml/badge.svg)](https://github.com/matybq/finance-query-engine/actions/workflows/deploy.yml)
 
 **Live demo:** http://187.127.9.91/ — ask the deployed agent from the web UI (try *"What is AirCover for Hosts?"*). Interactive Swagger UI at [/api/docs](http://187.127.9.91/api/docs).
 
