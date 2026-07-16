@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { AgentGraph } from "./AgentGraph";
 import { askStream, type Route, type SourceRef, type TraceEvent } from "./api";
 
 const SAMPLE_QUESTIONS = [
@@ -172,21 +173,33 @@ export function App() {
           )}
           <p className="asked">{asked}</p>
 
-          {trace.length > 0 && (
-            <ol className="trace">
-              {trace.map((step, index) => {
-                const line = traceLine(step);
-                return (
-                  <li key={index} className={line.tone}>
-                    <span className="trace-label">{line.label}</span>
-                    {line.detail && <span className="trace-detail">{line.detail}</span>}
-                  </li>
-                );
-              })}
-            </ol>
+          {phase !== "error" && (
+            <div className="run-body">
+              <AgentGraph
+                trace={trace}
+                route={route}
+                hasTokens={streamed !== ""}
+                finished={phase === "done"}
+              />
+              <div className="run-side">
+                {trace.length > 0 ? (
+                  <ol className="trace">
+                    {trace.map((step, index) => {
+                      const line = traceLine(step);
+                      return (
+                        <li key={index} className={line.tone}>
+                          <span className="trace-label">{line.label}</span>
+                          {line.detail && <span className="trace-detail">{line.detail}</span>}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <p className="mono waiting">routing the question…</p>
+                )}
+              </div>
+            </div>
           )}
-
-          {running && trace.length === 0 && <p className="mono waiting">routing the question…</p>}
           {running && streamed !== "" && (
             <p className="answer-text">
               {streamed}

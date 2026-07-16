@@ -231,6 +231,139 @@ body {
   margin-top: 0.25rem;
 }
 
+/* ---- agent graph ---- */
+
+.run-body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+.agent-graph {
+  width: 100%;
+  height: auto;
+}
+
+.agent-graph marker path {
+  fill: var(--ink-soft);
+}
+
+.gedge {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+}
+
+.gedge.on {
+  opacity: 1;
+  animation: draw 0.45s ease-out forwards;
+}
+
+.gedge.ghost {
+  opacity: 0.22;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  transition: opacity 0.6s ease 0.3s;
+}
+
+.gnode {
+  opacity: 0;
+}
+
+.gnode rect {
+  fill: var(--paper-raised);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.gnode text {
+  font-family: var(--mono);
+  font-size: 9px;
+  fill: var(--ink);
+  text-anchor: middle;
+}
+
+.gnode.on {
+  opacity: 1;
+  animation: pop 0.35s ease-out;
+}
+
+.gnode.on.ok rect {
+  stroke: var(--ledger);
+}
+
+.gnode.on.ok text {
+  fill: var(--ledger);
+}
+
+.gnode.on.warn rect {
+  stroke: var(--amber);
+}
+
+.gnode.on.warn text {
+  fill: var(--amber);
+}
+
+.gnode.ghost {
+  opacity: 0.25;
+  transition: opacity 0.6s ease 0.3s;
+}
+
+.gnode.active rect {
+  stroke: var(--ledger);
+  animation: nodepulse 1.1s ease-in-out infinite;
+}
+
+.gnode.active text {
+  fill: var(--ledger);
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nodepulse {
+  0%,
+  100% {
+    stroke-width: 1;
+  }
+  50% {
+    stroke-width: 2.5;
+  }
+}
+
+@media (max-width: 620px) {
+  .run-body {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-graph {
+    max-width: 280px;
+    margin: 0 auto;
+  }
+}
+
 /* ---- agent trace ---- */
 
 .trace {

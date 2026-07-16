@@ -109,7 +109,7 @@ curl -X POST localhost:8000/ask \
 
 ### Web UI
 
-A single-page React + TypeScript app (Vite, no UI framework) in [`frontend/`](frontend/) that consumes `POST /api/ask/stream`: the agent's decisions render live as a trace timeline (routing with its reason, retrieved sections, grading verdict, query rewrites), and the answer streams in token by token with its route badge and source sections.
+A single-page React + TypeScript app (Vite, no UI framework) in [`frontend/`](frontend/) that consumes `POST /api/ask/stream`: the agent graph draws itself live as each decision happens (hand-built SVG — visited nodes and edges ink in, the active node pulses, untaken paths appear ghosted at the end), beside a trace timeline with each decision's reason, while the answer streams in token by token with its route badge and source sections.
 
 ```bash
 cd frontend
